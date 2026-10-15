@@ -1,6 +1,11 @@
 Attribute VB_Name = "ModFuncoes"
 Option Explicit
 
+Public Sub AbrirProdutosServicos()
+    FormProdutos.Show
+End Sub
+
+
 ' ========================================================
 ' MACROS PÚBLICAS DE NAVEGAÇÃO E ACESSO AO SISTEMA (FASE 5)
 ' ========================================================

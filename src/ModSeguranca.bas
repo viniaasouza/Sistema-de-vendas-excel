@@ -3,7 +3,7 @@ Option Explicit
 Option Compare Text
 
 ' =============================================================
-' M√ìDULO DE SEGURAN√áA, CONTROLE DE ACESSO E OPERADORES (FASE 5 & 6)
+' M”DULO DE SEGURAN«A, CONTROLE DE ACESSO E OPERADORES (FASE 5, 6 & 7)
 ' =============================================================
 Public vUsuarioAtivo As String
 Public vNomeOperador As String
@@ -18,7 +18,7 @@ End Function
 
 Public Sub ProtegerAbaUsuarios()
     ' Oculta a aba USUARIOS de forma blindada (xlSheetVeryHidden = 2)
-    ' Impede visualiza√ß√£o ou desoculta√ß√£o pelo menu normal do Excel
+    ' Impede visualizaÁ„o ou desocultaÁ„o pelo menu normal do Excel
     On Error Resume Next
     Dim wsU As Worksheet
     Set wsU = PlanUsuarios()
@@ -39,12 +39,16 @@ Public Sub InicializarSessaoPadrao()
 End Sub
 
 Public Sub AbrirLogin(Optional ByVal bTrocaUsuario As Boolean = False)
+    Call ProtegerAbaUsuarios
     FormLogin.bModoTroca = bTrocaUsuario
     FormLogin.Show
 End Sub
 
 Public Sub TrocarOperador()
+    ' Garante ocultaÁ„o imediata da aba de usu·rios antes e apÛs a troca
+    Call ProtegerAbaUsuarios
     Call AbrirLogin(True)
+    Call ProtegerAbaUsuarios
 End Sub
 
 Public Function AutenticarUsuario(ByVal loginOuNome As String, ByVal pinSenha As String) As Boolean
@@ -57,6 +61,7 @@ Public Function AutenticarUsuario(ByVal loginOuNome As String, ByVal pinSenha As
         vPerfilAtivo = "ADMIN"
         vIDUsuarioAtivo = 1
         AutenticarUsuario = True
+        Call ProtegerAbaUsuarios
         Call AtualizarBadgesFormsAbertos
         Exit Function
     End If
@@ -92,7 +97,16 @@ Public Function AutenticarUsuario(ByVal loginOuNome As String, ByVal pinSenha As
     
     If achou Then
         AutenticarUsuario = True
+        ' Garante que a aba USUARIOS seja VeryHidden imediatamente apÛs qualquer login
+        Call ProtegerAbaUsuarios
         Call AtualizarBadgesFormsAbertos
+        
+        ' Se operador logado for RECEPCAO, garante que ele esteja no INÕCIO
+        If UCase(Trim(vPerfilAtivo)) = "RECEPCAO" Then
+            On Error Resume Next
+            ThisWorkbook.Sheets("INÕCIO").Activate
+            On Error GoTo 0
+        End If
     Else
         AutenticarUsuario = False
     End If
@@ -108,9 +122,9 @@ Public Function VerificarAutorizacaoAdmin(ByVal operacaoDescricao As String, Opt
     If senhaDireta <> "" Then
         pinInformado = senhaDireta
     Else
-        pinInformado = InputBox("Esta opera√ß√£o exige autoriza√ß√£o de Administrador!" & vbCrLf & vbCrLf & _
-                                "‚Ä¢ A√ß√£o: " & operacaoDescricao & vbCrLf & vbCrLf & _
-                                "Digite o PIN de 4 d√≠gitos do Administrador:", "Autoriza√ß√£o Administrativa")
+        pinInformado = InputBox("Esta operaÁ„o exige autorizaÁ„o de Administrador!" & vbCrLf & vbCrLf & _
+                                "ï AÁ„o: " & operacaoDescricao & vbCrLf & vbCrLf & _
+                                "Digite o PIN de 4 dÌgitos do Administrador:", "AutorizaÁ„o Administrativa")
     End If
     
     If Trim(pinInformado) = "" Then
@@ -136,14 +150,14 @@ Public Function VerificarAutorizacaoAdmin(ByVal operacaoDescricao As String, Opt
         End If
     Next r
     
-    MsgBox "PIN de Administrador incorreto! Opera√ß√£o cancelada.", vbCritical, "Acesso Negado"
+    MsgBox "PIN de Administrador incorreto! OperaÁ„o cancelada.", vbCritical, "Acesso Negado"
     VerificarAutorizacaoAdmin = False
 End Function
 
 Public Sub AtualizarBadgesFormsAbertos()
     On Error Resume Next
     Dim textoBadge As String
-    textoBadge = "üë§ Operador: " & vNomeOperador & " (" & IIf(vPerfilAtivo = "ADMIN", "Admin", "Recep√ß√£o") & ")"
+    textoBadge = "?? Operador: " & vNomeOperador & " (" & IIf(vPerfilAtivo = "ADMIN", "Admin", "RecepÁ„o") & ")"
     
     ' Atualiza FormVendas se aberto
     FormVendas.LblOperadorBadge.Caption = textoBadge
@@ -170,31 +184,40 @@ Public Sub ConfigurarPermissoesRelatorios()
             .TxtTotalTaxas.ForeColor = &H7F7F7F
             .TxtTotalReceber.ForeColor = &H7F7F7F
             .LblCardTotal.Caption = "Total Vendido: (Admin)"
-            .LblCardTaxa.Caption = "Taxas Cart√£o: (Admin)"
-            .LblCardReceber.Caption = "L√çQ. A RECEBER: (Admin)"
+            .LblCardTaxa.Caption = "Taxas Cart„o: (Admin)"
+            .LblCardReceber.Caption = "LÕQ. A RECEBER: (Admin)"
         Else
             .TxtTotalVendido.ForeColor = 13107200
             .TxtTotalTaxas.ForeColor = 255
             .TxtTotalReceber.ForeColor = 24608
             .LblCardTotal.Caption = "Total Vendido:"
-            .LblCardTaxa.Caption = "Total Taxas Cart√£o:"
-            .LblCardReceber.Caption = "L√çQUIDO A RECEBER:"
+            .LblCardTaxa.Caption = "Total Taxas Cart„o:"
+            .LblCardReceber.Caption = "LÕQUIDO A RECEBER:"
         End If
     End With
     On Error GoTo 0
 End Sub
 
 Public Sub AbrirGerenciamentoUsuarios()
-    ' S√≥ abre a planilha de usu√°rios se o Administrador confirmar a senha
-    If VerificarAutorizacaoAdmin("Gerenciamento e Acesso √† Base de Usu√°rios") Then
+    ' SÛ abre a planilha de usu·rios se o Administrador confirmar a senha
+    If VerificarAutorizacaoAdmin("Gerenciamento e Acesso ‡ Base de Usu·rios") Then
         Dim wsU As Worksheet
         Set wsU = PlanUsuarios()
         If Not wsU Is Nothing Then
             wsU.Visible = -1 ' xlSheetVisible
             wsU.Activate
             MsgBox "Aba USUARIOS desocultada com sucesso!" & vbCrLf & vbCrLf & _
-                   "‚Ä¢ Para alterar senhas ou nomes, edite diretamente as c√©lulas." & vbCrLf & _
-                   "‚Ä¢ Ao terminar ou fechar o sistema, ela ser√° novamente ocultada de forma blindada.", vbInformation, "Gerenciamento de Acessos"
+                   "ï Para alterar senhas ou nomes, edite diretamente as cÈlulas." & vbCrLf & _
+                   "ï Ao trocar de operador ou sair desta aba, ela se OCULTAR¡ AUTOMATICAMENTE de forma blindada.", vbInformation, "Gerenciamento de Acessos"
         End If
     End If
 End Sub
+
+Public Sub FecharEProtegerUsuarios()
+    Call ProtegerAbaUsuarios
+    On Error Resume Next
+    ThisWorkbook.Sheets("INÕCIO").Activate
+    On Error GoTo 0
+    MsgBox "Planilha de Usu·rios blindada e ocultada com sucesso!", vbInformation, "SeguranÁa Ativa"
+End Sub
+

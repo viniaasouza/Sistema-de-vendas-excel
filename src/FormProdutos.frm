@@ -16,36 +16,36 @@ Attribute VB_Exposed = False
 Option Explicit
 
 Private Sub UserForm_Initialize()
-    Call ModProdutos.LimparCampos
-    Call ModProdutos.BuscarProdutos
+    Call ModProdutosServicos.LimparCampos
+    Call ModProdutosServicos.BuscarProdutos
     
     If UCase(Trim(ModSeguranca.vPerfilAtivo)) = "RECEPCAO" Then
         TxtPreco.Locked = True
         TxtPreco.BackColor = 15790320
-        Me.Caption = "Cadastro de Produtos (Modo Consulta - Recepção)"
+        Me.Caption = "Cadastro de Produtos e Serviços (Modo Consulta - Recepção)"
     Else
         TxtPreco.Locked = False
         TxtPreco.BackColor = &H80000005
-        Me.Caption = "Cadastro de Produtos"
+        Me.Caption = "Cadastro de Produtos e Serviços"
     End If
 End Sub
 
 Private Sub BtSalvar_Click()
-    Call ModProdutos.SalvarProdutos
+    Call ModProdutosServicos.SalvarProdutos
 End Sub
 
 Private Sub BtNovo_Click()
-    Call ModProdutos.LimparCampos
+    Call ModProdutosServicos.LimparCampos
 End Sub
 
 Private Sub BtExcluir_Click()
-    Call ModProdutos.ExcluirProduto
+    Call ModProdutosServicos.ExcluirProduto
 End Sub
 
 Private Sub LstDados_Click()
     If LstDados.ListIndex = -1 Then Exit Sub
     
-    ModProdutos.vIDProduto = LstDados.List(LstDados.ListIndex, 0)
+    ModProdutosServicos.vIDProduto = LstDados.List(LstDados.ListIndex, 0)
     TxtDescricao.Text = LstDados.List(LstDados.ListIndex, 2)
     
     Dim pStr As String
@@ -74,7 +74,7 @@ Private Sub TxtPesquisa_Change()
     Else
         LblPesquisa.Visible = True
     End If
-    Call ModProdutos.BuscarProdutos
+    Call ModProdutosServicos.BuscarProdutos
 End Sub
 
 Private Sub LblPesquisa_Click()
@@ -85,6 +85,6 @@ Private Sub CommandButton2_Click()
     TxtPesquisa.Text = ""
     LblPesquisa.Visible = True
     TxtPesquisa.SetFocus
-    Call ModProdutos.BuscarProdutos
+    Call ModProdutosServicos.BuscarProdutos
 End Sub
 
