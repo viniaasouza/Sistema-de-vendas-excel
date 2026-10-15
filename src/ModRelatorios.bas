@@ -509,7 +509,7 @@ Sub GerarComprovanteVendaPDF()
         wsC.Cells(linItemC, 1).HorizontalAlignment = -4108
         wsC.Cells(linItemC, 1).Font.Bold = True
         
-        wsC.Columns.AutoFit()
+        wsC.Columns.AutoFit
         
         Dim pastaRel As String, caminhoPDF As String
         pastaRel = ObterPastaLocalRelatorios()
@@ -538,5 +538,6 @@ Sub GerarComprovanteVendaPDF()
         Application.DisplayAlerts = True
     End With
 End Sub
+
 
 
