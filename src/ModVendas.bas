@@ -24,6 +24,9 @@ Sub IniciarNovaVenda()
     vItemIndexEmEdicao = -1
     
     With FormVendas
+        ' Bloqueia eventos durante a inicialização para evitar cascata prematura
+        .bBloqueiaEventos = True
+        
         ' 1. Gerar próximo ID de venda sequencial
         Dim linV As Long, novoID As Long
         linV = PlanVendas.Cells(PlanVendas.Rows.Count, "A").End(xlUp).Row
@@ -43,16 +46,7 @@ Sub IniciarNovaVenda()
         ' 4. Preencher Combo de Produtos com busca ativa (Nome em destaque)
         Call FiltrarProdutos("")
         
-        ' 5. Formas de Pagamento
-        .CboFormaPagto.Clear
-        .CboFormaPagto.AddItem "Dinheiro"
-        .CboFormaPagto.AddItem "PIX"
-        .CboFormaPagto.AddItem "Cartão de Crédito"
-        .CboFormaPagto.AddItem "Cartão de Débito"
-        .CboFormaPagto.AddItem "Boleto Bancário"
-        .CboFormaPagto.ListIndex = 1 ' PIX como padrão
-        
-        ' 6. Parcelas (1x a 12x)
+        ' 5. Preencher Parcelas ANTES da forma de pagamento
         .CboParcelas.Clear
         .CboParcelas.AddItem "1x (À vista)"
         .CboParcelas.AddItem "2x"
@@ -68,6 +62,15 @@ Sub IniciarNovaVenda()
         .CboParcelas.AddItem "12x"
         .CboParcelas.ListIndex = 0
         
+        ' 6. Preencher Formas de Pagamento
+        .CboFormaPagto.Clear
+        .CboFormaPagto.AddItem "Dinheiro"
+        .CboFormaPagto.AddItem "PIX"
+        .CboFormaPagto.AddItem "Cartão de Crédito"
+        .CboFormaPagto.AddItem "Cartão de Débito"
+        .CboFormaPagto.AddItem "Boleto Bancário"
+        .CboFormaPagto.ListIndex = 1 ' PIX como padrão
+        
         ' 7. Resetar campos de item e totais
         Call LimparCamposItem
         .LstItens.Clear
@@ -76,13 +79,17 @@ Sub IniciarNovaVenda()
         .TxtTotalLiquido.Text = "R$ 0,00"
         .TxtTaxaCartao.Text = "0,00"
         
-        ' 8. Atualizar estado dos campos de pagamento e totais
+        ' Libera eventos e atualiza estado inicial
+        .bBloqueiaEventos = False
         Call FormaPagtoAlterada
+        Call RecalcularTotaisVenda
     End With
 End Sub
 
 Sub FormaPagtoAlterada()
     With FormVendas
+        If .bBloqueiaEventos Then Exit Sub
+        
         Dim forma As String
         forma = Trim(.CboFormaPagto.Text)
         
@@ -93,14 +100,14 @@ Sub FormaPagtoAlterada()
                 .TxtTaxaCartao.Text = "3,50"
             End If
         ElseIf forma = "Cartão de Débito" Then
-            .CboParcelas.ListIndex = 0
+            If .CboParcelas.ListCount > 0 Then .CboParcelas.ListIndex = 0
             .CboParcelas.Enabled = False
             .TxtTaxaCartao.Enabled = True
             If Trim(.TxtTaxaCartao.Text) = "" Or Val(Replace(.TxtTaxaCartao.Text, ",", ".")) = 0 Then
                 .TxtTaxaCartao.Text = "1,50"
             End If
         Else
-            .CboParcelas.ListIndex = 0
+            If .CboParcelas.ListCount > 0 Then .CboParcelas.ListIndex = 0
             .CboParcelas.Enabled = False
             .TxtTaxaCartao.Text = "0,00"
             .TxtTaxaCartao.Enabled = False
@@ -171,6 +178,7 @@ End Sub
 
 Sub ProdutoSelecionado()
     With FormVendas
+        If .bBloqueiaEventos Then Exit Sub
         If .CboProduto.ListIndex = -1 Then Exit Sub
         
         Dim strProd As String, idProd As String
@@ -197,6 +205,8 @@ End Sub
 
 Sub AtualizarSubtotalItem()
     With FormVendas
+        If .bBloqueiaEventos Then Exit Sub
+        
         Dim pStr As String, qStr As String
         pStr = Replace(.TxtPrecoUnit.Text, "R$", "")
         pStr = Trim(pStr)
@@ -321,6 +331,8 @@ End Sub
 
 Sub RecalcularTotaisVenda()
     With FormVendas
+        If .bBloqueiaEventos Then Exit Sub
+        
         Dim i As Long, totalBruto As Double
         totalBruto = 0
         

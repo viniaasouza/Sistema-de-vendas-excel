@@ -15,6 +15,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
 
+Public bBloqueiaEventos As Boolean
 Private bBloqueiaBuscaCli As Boolean
 Private bBloqueiaBuscaProd As Boolean
 
@@ -26,7 +27,7 @@ End Sub
 ' === BUSCA INTELIGENTE DE CLIENTES AO DIGITAR ===
 Private Sub CboCliente_KeyUp(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
     If KeyCode = vbKeyUp Or KeyCode = vbKeyDown Or KeyCode = vbKeyReturn Or KeyCode = vbKeyTab Or KeyCode = vbKeyEscape Then Exit Sub
-    If bBloqueiaBuscaCli Then Exit Sub
+    If bBloqueiaBuscaCli Or bBloqueiaEventos Then Exit Sub
     
     Dim textoDigitado As String
     textoDigitado = CboCliente.Text
@@ -44,7 +45,7 @@ End Sub
 ' === BUSCA INTELIGENTE DE PRODUTOS AO DIGITAR ===
 Private Sub CboProduto_KeyUp(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
     If KeyCode = vbKeyUp Or KeyCode = vbKeyDown Or KeyCode = vbKeyReturn Or KeyCode = vbKeyTab Or KeyCode = vbKeyEscape Then Exit Sub
-    If bBloqueiaBuscaProd Then Exit Sub
+    If bBloqueiaBuscaProd Or bBloqueiaEventos Then Exit Sub
     
     Dim textoDigitado As String
     textoDigitado = CboProduto.Text
@@ -60,14 +61,17 @@ Private Sub CboProduto_KeyUp(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift
 End Sub
 
 Private Sub CboProduto_Change()
+    If bBloqueiaEventos Then Exit Sub
     Call ModVendas.ProdutoSelecionado
 End Sub
 
 Private Sub TxtQtd_Change()
+    If bBloqueiaEventos Then Exit Sub
     Call ModVendas.AtualizarSubtotalItem
 End Sub
 
 Private Sub TxtPrecoUnit_Change()
+    If bBloqueiaEventos Then Exit Sub
     Call ModVendas.AtualizarSubtotalItem
 End Sub
 
@@ -91,18 +95,22 @@ End Sub
 
 ' === CONTROLE DE FORMA DE PAGAMENTO E CARTÃO ===
 Private Sub CboFormaPagto_Change()
+    If bBloqueiaEventos Then Exit Sub
     Call ModVendas.FormaPagtoAlterada
 End Sub
 
 Private Sub CboParcelas_Change()
+    If bBloqueiaEventos Then Exit Sub
     Call ModVendas.RecalcularTotaisVenda
 End Sub
 
 Private Sub TxtTaxaCartao_Change()
+    If bBloqueiaEventos Then Exit Sub
     Call ModVendas.RecalcularTotaisVenda
 End Sub
 
 Private Sub TxtDesconto_Change()
+    If bBloqueiaEventos Then Exit Sub
     Call ModVendas.RecalcularTotaisVenda
 End Sub
 
