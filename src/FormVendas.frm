@@ -16,6 +16,7 @@ Attribute VB_Exposed = False
 Option Explicit
 
 Private Sub UserForm_Initialize()
+    Me.Caption = "Emissão de Vendas (PDV)"
     Call ModVendas.IniciarNovaVenda
 End Sub
 
