@@ -23,11 +23,15 @@ End Function
 Sub IniciarNovaVenda()
     vItemIndexEmEdicao = -1
     
+    If Trim(ModSeguranca.vUsuarioAtivo) = "" Then
+        Call ModSeguranca.InicializarSessaoPadrao
+    End If
+    Call ModSeguranca.AtualizarBadgesFormsAbertos
+    Call ModRelatorios.CarregarLogoEmImage(FormVendas.ImgLogo)
+    
     With FormVendas
-        ' Bloqueia eventos durante a inicialização para evitar cascata prematura
         .bBloqueiaEventos = True
         
-        ' 1. Gerar próximo ID de venda sequencial
         Dim linV As Long, novoID As Long
         linV = PlanVendas.Cells(PlanVendas.Rows.Count, "A").End(xlUp).Row
         If linV < 2 Then
@@ -37,149 +41,168 @@ Sub IniciarNovaVenda()
         End If
         .TxtIDVenda.Text = Format(novoID, "0000")
         
-        ' 2. Data atual do sistema
         .TxtData.Text = Format(Date, "dd/mm/yyyy")
         
-        ' 3. Preencher Combo de Clientes com busca ativa (Nome em destaque)
         Call FiltrarClientes("")
+        .CboCliente.Text = ""
         
-        ' 4. Preencher Combo de Produtos com busca ativa (Nome em destaque)
         Call FiltrarProdutos("")
+        .CboProduto.Text = ""
+        .TxtPrecoUnit.Text = ""
+        .TxtQtd.Text = "1"
+        .TxtSubtotalItem.Text = ""
         
-        ' 5. Preencher Parcelas ANTES da forma de pagamento
-        .CboParcelas.Clear
-        .CboParcelas.AddItem "1x (À vista)"
-        .CboParcelas.AddItem "2x"
-        .CboParcelas.AddItem "3x"
-        .CboParcelas.AddItem "4x"
-        .CboParcelas.AddItem "5x"
-        .CboParcelas.AddItem "6x"
-        .CboParcelas.AddItem "7x"
-        .CboParcelas.AddItem "8x"
-        .CboParcelas.AddItem "9x"
-        .CboParcelas.AddItem "10x"
-        .CboParcelas.AddItem "11x"
-        .CboParcelas.AddItem "12x"
-        .CboParcelas.ListIndex = 0
+        .LstItens.Clear
+        .LstItens.ColumnCount = 6
+        .LstItens.ColumnWidths = "30 pt;35 pt;170 pt;60 pt;40 pt;65 pt"
+        .BtRemoverItem.Enabled = False
         
-        ' 6. Preencher Formas de Pagamento
         .CboFormaPagto.Clear
         .CboFormaPagto.AddItem "Dinheiro"
         .CboFormaPagto.AddItem "PIX"
         .CboFormaPagto.AddItem "Cartão de Crédito"
         .CboFormaPagto.AddItem "Cartão de Débito"
         .CboFormaPagto.AddItem "Boleto Bancário"
-        .CboFormaPagto.ListIndex = 1 ' PIX como padrão
+        .CboFormaPagto.ListIndex = 0
         
-        ' 7. Resetar campos de item e totais
-        Call LimparCamposItem
-        .LstItens.Clear
         .TxtTotalBruto.Text = "R$ 0,00"
-        .TxtDesconto.Text = "0,00"
+        .TxtDesconto.Text = ""
         .TxtTotalLiquido.Text = "R$ 0,00"
-        .TxtTaxaCartao.Text = "0,00"
         
-        ' Libera eventos e atualiza estado inicial
+        .CboParcelas.Clear
+        .CboParcelas.AddItem "1x (à vista)"
+        .CboParcelas.ListIndex = 0
+        .CboParcelas.Enabled = False
+        
+        .TxtTaxaCartao.Text = "0,00%"
+        .TxtTaxaCartao.Enabled = False
+        
+        .TxtValorReceber.Text = "R$ 0,00"
+        .TxtValorParcela.Text = "R$ 0,00 (1x)"
+        .TxtTaxaRS.Text = "R$ 0,00 (0,00%)"
+        
         .bBloqueiaEventos = False
-        Call FormaPagtoAlterada
-        Call RecalcularTotaisVenda
+        .CboCliente.SetFocus
     End With
 End Sub
 
 Sub FormaPagtoAlterada()
     With FormVendas
-        If .bBloqueiaEventos Then Exit Sub
+        .bBloqueiaEventos = True
         
-        Dim forma As String
-        forma = Trim(.CboFormaPagto.Text)
+        Dim fp As String
+        fp = .CboFormaPagto.Text
         
-        If forma = "Cartão de Crédito" Then
+        If fp = "Cartão de Crédito" Then
             .CboParcelas.Enabled = True
             .TxtTaxaCartao.Enabled = True
-            If Trim(.TxtTaxaCartao.Text) = "" Or Val(Replace(.TxtTaxaCartao.Text, ",", ".")) = 0 Then
-                .TxtTaxaCartao.Text = "3,50"
-            End If
-        ElseIf forma = "Cartão de Débito" Then
-            If .CboParcelas.ListCount > 0 Then .CboParcelas.ListIndex = 0
+            
+            .CboParcelas.Clear
+            Dim i As Long
+            For i = 1 To 12
+                If i = 1 Then
+                    .CboParcelas.AddItem "1x (à vista)"
+                Else
+                    .CboParcelas.AddItem i & "x"
+                End If
+            Next i
+            .CboParcelas.ListIndex = 0
+            
+            .TxtTaxaCartao.Text = "3,50%"
+            
+        ElseIf fp = "Cartão de Débito" Then
+            .CboParcelas.Clear
+            .CboParcelas.AddItem "1x (à vista)"
+            .CboParcelas.ListIndex = 0
             .CboParcelas.Enabled = False
+            
             .TxtTaxaCartao.Enabled = True
-            If Trim(.TxtTaxaCartao.Text) = "" Or Val(Replace(.TxtTaxaCartao.Text, ",", ".")) = 0 Then
-                .TxtTaxaCartao.Text = "1,50"
-            End If
+            .TxtTaxaCartao.Text = "1,50%"
+            
         Else
-            If .CboParcelas.ListCount > 0 Then .CboParcelas.ListIndex = 0
+            .CboParcelas.Clear
+            .CboParcelas.AddItem "1x (à vista)"
+            .CboParcelas.ListIndex = 0
             .CboParcelas.Enabled = False
-            .TxtTaxaCartao.Text = "0,00"
+            
             .TxtTaxaCartao.Enabled = False
+            .TxtTaxaCartao.Text = "0,00%"
         End If
         
+        .bBloqueiaEventos = False
         Call RecalcularTotaisVenda
     End With
 End Sub
 
 Sub FiltrarClientes(ByVal textoBusca As String)
-    Dim linC As Long, ultLinC As Long
-    Dim nomeCli As String, idCli As String, cpfCli As String
+    Dim ultLin As Long, r As Long
+    ultLin = PlanClientes.Cells(PlanClientes.Rows.Count, "A").End(xlUp).Row
     
     With FormVendas.CboCliente
         .Clear
-        ultLinC = PlanClientes.Cells(PlanClientes.Rows.Count, "A").End(xlUp).Row
-        If ultLinC < 2 Then Exit Sub
+        If ultLin < 2 Then Exit Sub
         
-        For linC = 2 To ultLinC
-            idCli = PlanClientes.Cells(linC, "A").Text
-            nomeCli = PlanClientes.Cells(linC, "B").Text
-            cpfCli = PlanClientes.Cells(linC, "C").Text
+        Dim busca As String
+        busca = UCase(Trim(textoBusca))
+        
+        For r = 2 To ultLin
+            Dim idCli As String, nomeCli As String, docCli As String
+            idCli = PlanClientes.Cells(r, "A").Text
+            nomeCli = PlanClientes.Cells(r, "B").Text
+            docCli = PlanClientes.Cells(r, "C").Text
             
-            If Trim(nomeCli) <> "" Then
-                If Trim(textoBusca) = "" Or (nomeCli Like "*" & AcSQL(textoBusca) & "*") Or (cpfCli Like "*" & textoBusca & "*") Then
-                    .AddItem nomeCli & "  (" & idCli & ")"
-                End If
+            If busca = "" Or InStr(1, UCase(nomeCli), busca) > 0 Or InStr(1, docCli, busca) > 0 Then
+                .AddItem nomeCli & " (" & idCli & ")"
             End If
-        Next linC
+        Next r
     End With
 End Sub
 
 Sub FiltrarProdutos(ByVal textoBusca As String)
-    Dim linP As Long, ultLinP As Long
-    Dim descProd As String, idProd As String
+    Dim ultLin As Long, r As Long
+    ultLin = PlanProdutos.Cells(PlanProdutos.Rows.Count, "A").End(xlUp).Row
     
     With FormVendas.CboProduto
         .Clear
-        ultLinP = PlanProdutos.Cells(PlanProdutos.Rows.Count, "A").End(xlUp).Row
-        If ultLinP < 2 Then Exit Sub
+        If ultLin < 2 Then Exit Sub
         
-        For linP = 2 To ultLinP
-            idProd = PlanProdutos.Cells(linP, "A").Text
-            descProd = PlanProdutos.Cells(linP, "B").Text
+        Dim busca As String
+        busca = UCase(Trim(textoBusca))
+        
+        For r = 2 To ultLin
+            Dim idProd As String, descProd As String, precoProd As Double
+            idProd = PlanProdutos.Cells(r, "A").Text
+            descProd = PlanProdutos.Cells(r, "B").Text
+            precoProd = PlanProdutos.Cells(r, "C").Value
             
-            If Trim(descProd) <> "" Then
-                If Trim(textoBusca) = "" Or (descProd Like "*" & AcSQL(textoBusca) & "*") Then
-                    .AddItem descProd & "  (" & idProd & ")"
-                End If
+            If busca = "" Or InStr(1, UCase(descProd), busca) > 0 Then
+                .AddItem descProd & " (" & idProd & ")"
             End If
-        Next linP
+        Next r
     End With
 End Sub
 
 Sub LimparCamposItem()
-    vItemIndexEmEdicao = -1
     With FormVendas
-        .CboProduto.ListIndex = -1
+        .bBloqueiaEventos = True
+        .CboProduto.Text = ""
         .TxtPrecoUnit.Text = ""
         .TxtQtd.Text = "1"
         .TxtSubtotalItem.Text = ""
+        .bBloqueiaEventos = False
+        vItemIndexEmEdicao = -1
         .BtAdicionarItem.Caption = "ADICIONAR"
-        On Error Resume Next
-        .BtRemoverItem.Enabled = False
-        On Error GoTo 0
+        .BtAdicionarItem.BackColor = 16744576
     End With
 End Sub
 
 Sub ProdutoSelecionado()
     With FormVendas
-        If .bBloqueiaEventos Then Exit Sub
-        If .CboProduto.ListIndex = -1 Then Exit Sub
+        If .CboProduto.ListIndex = -1 And Trim(.CboProduto.Text) = "" Then
+            .TxtPrecoUnit.Text = ""
+            .TxtSubtotalItem.Text = ""
+            Exit Sub
+        End If
         
         Dim strProd As String, idProd As String
         strProd = .CboProduto.Text
@@ -188,16 +211,17 @@ Sub ProdutoSelecionado()
         p1 = InStrRev(strProd, "(")
         p2 = InStrRev(strProd, ")")
         
+        Dim linProd As Range
         If p1 > 0 And p2 > p1 Then
-            idProd = Trim(Mid(strProd, p1 + 1, p2 - p1 - 1))
+            idProd = Mid(strProd, p1 + 1, p2 - p1 - 1)
+            Set linProd = PlanProdutos.Range("A:A").Find(What:=idProd, LookIn:=xlValues, LookAt:=xlWhole)
         Else
-            idProd = Trim(Split(strProd, " - ")(0))
+            Set linProd = PlanProdutos.Range("B:B").Find(What:=Trim(strProd), LookIn:=xlValues, LookAt:=xlWhole)
         End If
         
-        Dim cel As Range
-        Set cel = PlanProdutos.Range("A:A").Find(What:=idProd, LookIn:=xlValues, LookAt:=xlWhole)
-        If Not cel Is Nothing Then
-            .TxtPrecoUnit.Text = Format(cel.Offset(0, 2).Value, "#,##0.00")
+        If Not linProd Is Nothing Then
+            .TxtPrecoUnit.Text = Format(linProd.Offset(0, 2).Value, "#,##0.00")
+            If Val(.TxtQtd.Text) <= 0 Then .TxtQtd.Text = "1"
             Call AtualizarSubtotalItem
         End If
     End With
@@ -205,73 +229,123 @@ End Sub
 
 Sub AtualizarSubtotalItem()
     With FormVendas
-        If .bBloqueiaEventos Then Exit Sub
+        Dim preco As Double, qtd As Double, subtotal As Double
+        preco = 0
+        qtd = 0
         
-        Dim pStr As String, qStr As String
+        Dim pStr As String
         pStr = Replace(.TxtPrecoUnit.Text, "R$", "")
-        pStr = Trim(pStr)
-        qStr = Trim(.TxtQtd.Text)
+        pStr = Replace(pStr, ".", Application.International(xlDecimalSeparator))
+        pStr = Replace(pStr, ",", Application.International(xlDecimalSeparator))
+        If IsNumeric(pStr) Then preco = CDbl(pStr)
         
-        If IsNumeric(pStr) And IsNumeric(qStr) Then
-            Dim subt As Double
-            subt = CDbl(pStr) * CDbl(qStr)
-            .TxtSubtotalItem.Text = Format(subt, "#,##0.00")
-        Else
-            .TxtSubtotalItem.Text = ""
-        End If
+        Dim qStr As String
+        qStr = Replace(.TxtQtd.Text, ",", Application.International(xlDecimalSeparator))
+        qStr = Replace(qStr, ".", Application.International(xlDecimalSeparator))
+        If IsNumeric(qStr) Then qtd = CDbl(qStr)
+        
+        subtotal = preco * qtd
+        .TxtSubtotalItem.Text = Format(subtotal, "R$ #,##0.00")
     End With
 End Sub
 
 Sub AdicionarItem()
     With FormVendas
-        If .CboProduto.ListIndex = -1 And Trim(.CboProduto.Text) = "" Then
-            MsgBox "Selecione um produto para adicionar!", vbExclamation, "Item da Venda"
+        If Trim(.CboProduto.Text) = "" Then
+            MsgBox "Selecione ou digite um produto!", vbExclamation, "Item Inválido"
             .CboProduto.SetFocus
             Exit Sub
         End If
         
-        If Val(.TxtQtd.Text) <= 0 Then
-            MsgBox "Informe uma quantidade válida maior que zero!", vbExclamation, "Item da Venda"
+        Dim preco As Double, qtd As Double
+        preco = 0
+        qtd = 0
+        
+        Dim pStr As String, qStr As String
+        pStr = Replace(.TxtPrecoUnit.Text, "R$", "")
+        pStr = Replace(pStr, ".", Application.International(xlDecimalSeparator))
+        pStr = Replace(pStr, ",", Application.International(xlDecimalSeparator))
+        If IsNumeric(pStr) Then preco = CDbl(pStr)
+        
+        qStr = Replace(.TxtQtd.Text, ",", Application.International(xlDecimalSeparator))
+        qStr = Replace(qStr, ".", Application.International(xlDecimalSeparator))
+        If IsNumeric(qStr) Then qtd = CDbl(qStr)
+        
+        If preco <= 0 Then
+            MsgBox "Preço unitário inválido!", vbExclamation, "Preço Inválido"
+            .TxtPrecoUnit.SetFocus
+            Exit Sub
+        End If
+        
+        If qtd <= 0 Then
+            MsgBox "Informe uma quantidade maior que zero!", vbExclamation, "Quantidade Inválida"
             .TxtQtd.SetFocus
             Exit Sub
         End If
         
         Dim strProd As String, idProd As String, descProd As String
-        strProd = .CboProduto.Text
+        strProd = Trim(.CboProduto.Text)
         
         Dim p1 As Long, p2 As Long
         p1 = InStrRev(strProd, "(")
         p2 = InStrRev(strProd, ")")
         
         If p1 > 0 And p2 > p1 Then
-            idProd = Trim(Mid(strProd, p1 + 1, p2 - p1 - 1))
+            idProd = Mid(strProd, p1 + 1, p2 - p1 - 1)
             descProd = Trim(Left(strProd, p1 - 1))
         Else
-            descProd = Trim(strProd)
-            idProd = "1"
+            descProd = strProd
+            Dim celP As Range
+            Set celP = PlanProdutos.Range("B:B").Find(What:=descProd, LookIn:=xlValues, LookAt:=xlWhole)
+            If Not celP Is Nothing Then
+                idProd = celP.Offset(0, -1).Text
+            Else
+                idProd = "0"
+            End If
         End If
         
-        Dim pUnit As Double, qtd As Double, subt As Double
-        pUnit = CDbl(Replace(.TxtPrecoUnit.Text, "R$", ""))
-        qtd = CDbl(.TxtQtd.Text)
-        subt = pUnit * qtd
+        Dim subtotal As Double
+        subtotal = preco * qtd
         
+        Dim itemIdx As Long
         If vItemIndexEmEdicao >= 0 And vItemIndexEmEdicao < .LstItens.ListCount Then
-            .LstItens.List(vItemIndexEmEdicao, 1) = idProd
-            .LstItens.List(vItemIndexEmEdicao, 2) = descProd
-            .LstItens.List(vItemIndexEmEdicao, 3) = Format(pUnit, "R$ #,##0.00")
-            .LstItens.List(vItemIndexEmEdicao, 4) = qtd
-            .LstItens.List(vItemIndexEmEdicao, 5) = Format(subt, "R$ #,##0.00")
+            itemIdx = vItemIndexEmEdicao
         Else
-            Dim idx As Long
-            idx = .LstItens.ListCount
             .LstItens.AddItem
-            .LstItens.List(idx, 0) = idx + 1
-            .LstItens.List(idx, 1) = idProd
-            .LstItens.List(idx, 2) = descProd
-            .LstItens.List(idx, 3) = Format(pUnit, "R$ #,##0.00")
-            .LstItens.List(idx, 4) = qtd
-            .LstItens.List(idx, 5) = Format(subt, "R$ #,##0.00")
+            itemIdx = .LstItens.ListCount - 1
+            .LstItens.List(itemIdx, 0) = Format(itemIdx + 1, "00")
+        End If
+        
+        .LstItens.List(itemIdx, 1) = idProd
+        .LstItens.List(itemIdx, 2) = descProd
+        .LstItens.List(itemIdx, 3) = Format(preco, "R$ #,##0.00")
+        .LstItens.List(itemIdx, 4) = Format(qtd, "0.00")
+        .LstItens.List(itemIdx, 5) = Format(subtotal, "R$ #,##0.00")
+        
+        Call LimparCamposItem
+        Call RecalcularTotaisVenda
+        .CboProduto.SetFocus
+    End With
+End Sub
+
+Sub RemoverItem()
+    With FormVendas
+        If .LstItens.ListIndex = -1 Then
+            MsgBox "Selecione um item no carrinho para remover!", vbExclamation, "Remover Item"
+            Exit Sub
+        End If
+        
+        Dim idx As Long
+        idx = .LstItens.ListIndex
+        .LstItens.RemoveItem idx
+        
+        Dim i As Long
+        For i = 0 To .LstItens.ListCount - 1
+            .LstItens.List(i, 0) = Format(i + 1, "00")
+        Next i
+        
+        If .LstItens.ListCount = 0 Then
+            .BtRemoverItem.Enabled = False
         End If
         
         Call LimparCamposItem
@@ -279,136 +353,88 @@ Sub AdicionarItem()
     End With
 End Sub
 
-Sub RemoverItem()
-    With FormVendas
-        If .LstItens.ListIndex = -1 Then
-            MsgBox "Selecione um item no carrinho para remover!", vbExclamation, "Atenção"
-            Exit Sub
-        End If
-        
-        If MsgBox("Deseja remover este item da venda?", vbQuestion + vbYesNo, "Remover Item") = vbYes Then
-            .LstItens.RemoveItem .LstItens.ListIndex
-            
-            Dim i As Long
-            For i = 0 To .LstItens.ListCount - 1
-                .LstItens.List(i, 0) = i + 1
-            Next i
-            
-            Call LimparCamposItem
-            Call RecalcularTotaisVenda
-        End If
-    End With
-End Sub
-
 Sub CarregarItemParaEdicao()
     With FormVendas
         If .LstItens.ListIndex = -1 Then Exit Sub
+        
         vItemIndexEmEdicao = .LstItens.ListIndex
         
-        Dim idProd As String, descProd As String, i As Long
+        .bBloqueiaEventos = True
+        Dim desc As String, precoStr As String, qtdStr As String, idProd As String
         idProd = .LstItens.List(vItemIndexEmEdicao, 1)
-        descProd = .LstItens.List(vItemIndexEmEdicao, 2)
+        desc = .LstItens.List(vItemIndexEmEdicao, 2)
+        precoStr = Replace(.LstItens.List(vItemIndexEmEdicao, 3), "R$", "")
+        qtdStr = .LstItens.List(vItemIndexEmEdicao, 4)
         
-        For i = 0 To .CboProduto.ListCount - 1
-            If .CboProduto.List(i) Like "*(" & idProd & ")" Or .CboProduto.List(i) Like descProd & "*" Then
-                .CboProduto.ListIndex = i
-                Exit For
-            End If
-        Next i
+        .CboProduto.Text = desc & " (" & idProd & ")"
+        .TxtPrecoUnit.Text = Trim(precoStr)
+        .TxtQtd.Text = Trim(qtdStr)
+        .bBloqueiaEventos = False
         
-        Dim pStr As String
-        pStr = Replace(.LstItens.List(vItemIndexEmEdicao, 3), "R$", "")
-        .TxtPrecoUnit.Text = Trim(pStr)
-        .TxtQtd.Text = .LstItens.List(vItemIndexEmEdicao, 4)
         Call AtualizarSubtotalItem
         
-        .BtAdicionarItem.Caption = "ALTERAR"
-        On Error Resume Next
-        .BtRemoverItem.Enabled = True
-        On Error GoTo 0
+        .BtAdicionarItem.Caption = "ATUALIZAR"
+        .BtAdicionarItem.BackColor = 32768
+        .TxtQtd.SetFocus
     End With
 End Sub
 
 Sub RecalcularTotaisVenda()
     With FormVendas
-        If .bBloqueiaEventos Then Exit Sub
-        
-        Dim i As Long, totalBruto As Double
-        totalBruto = 0
+        Dim totBruto As Double, i As Long
+        totBruto = 0
         
         For i = 0 To .LstItens.ListCount - 1
-            Dim subtStr As String
-            subtStr = Replace(.LstItens.List(i, 5), "R$", "")
-            subtStr = Trim(subtStr)
-            If IsNumeric(subtStr) Then
-                totalBruto = totalBruto + CDbl(subtStr)
-            End If
+            Dim subStr As String, subVal As Double
+            subStr = Replace(.LstItens.List(i, 5), "R$", "")
+            subStr = Replace(subStr, ".", Application.International(xlDecimalSeparator))
+            subStr = Replace(subStr, ",", Application.International(xlDecimalSeparator))
+            If IsNumeric(subStr) Then subVal = CDbl(subStr) Else subVal = 0
+            totBruto = totBruto + subVal
         Next i
         
-        .TxtTotalBruto.Text = Format(totalBruto, "R$ #,##0.00")
+        .TxtTotalBruto.Text = Format(totBruto, "R$ #,##0.00")
         
-        Dim descVal As Double
-        descVal = 0
-        If IsNumeric(.TxtDesconto.Text) Then
-            descVal = CDbl(.TxtDesconto.Text)
-        End If
+        Dim descVal As Double, descStr As String
+        descStr = Replace(.TxtDesconto.Text, "R$", "")
+        descStr = Replace(descStr, ".", Application.International(xlDecimalSeparator))
+        descStr = Replace(descStr, ",", Application.International(xlDecimalSeparator))
+        If IsNumeric(descStr) Then descVal = CDbl(descStr) Else descVal = 0
         
-        Dim totalLiq As Double
-        totalLiq = totalBruto - descVal
-        If totalLiq < 0 Then totalLiq = 0
+        If descVal > totBruto Then descVal = totBruto
         
-        .TxtTotalLiquido.Text = Format(totalLiq, "R$ #,##0.00")
+        Dim totLiquido As Double
+        totLiquido = totBruto - descVal
+        .TxtTotalLiquido.Text = Format(totLiquido, "R$ #,##0.00")
         
-        ' -------------------------------------------------------------
-        ' Cálculo de Parcelas e Taxa da Maquininha (Cartão / Previsão)
-        ' -------------------------------------------------------------
+        ' Cálculo de Parcelamento e Previsão Líquida com Taxa de Cartão
         Dim numParc As Long
-        Dim strParc As String
-        strParc = Trim(.CboParcelas.Text)
-        
-        If InStr(strParc, "x") > 0 Then
-            numParc = Val(Split(strParc, "x")(0))
-        Else
-            numParc = 1
-        End If
-        If numParc < 1 Then numParc = 1
-        
-        If totalLiq > 0 Then
-            Dim vParc As Double
-            vParc = totalLiq / numParc
-            If numParc > 1 Then
-                .TxtValorParcela.Text = numParc & "x de " & Format(vParc, "R$ #,##0.00")
-            Else
-                .TxtValorParcela.Text = Format(totalLiq, "R$ #,##0.00") & " (À vista)"
+        numParc = 1
+        If .CboParcelas.Enabled And .CboParcelas.ListIndex >= 0 Then
+            Dim strP As String
+            strP = .CboParcelas.Text
+            If InStr(strP, "x") > 0 Then
+                numParc = Val(Left(strP, InStr(strP, "x") - 1))
+                If numParc < 1 Then numParc = 1
             End If
-        Else
-            .TxtValorParcela.Text = "R$ 0,00"
         End If
         
-        ' Taxa % da maquininha
-        Dim taxaStr As String, taxaPct As Double
-        taxaStr = Trim(Replace(.TxtTaxaCartao.Text, "%", ""))
+        Dim valParcela As Double
+        valParcela = totLiquido / numParc
+        .TxtValorParcela.Text = Format(valParcela, "R$ #,##0.00") & " (" & numParc & "x)"
+        
+        Dim taxaPct As Double, taxaStr As String
+        taxaStr = Replace(.TxtTaxaCartao.Text, "%", "")
         taxaStr = Replace(taxaStr, ".", Application.International(xlDecimalSeparator))
         taxaStr = Replace(taxaStr, ",", Application.International(xlDecimalSeparator))
+        If IsNumeric(taxaStr) Then taxaPct = CDbl(taxaStr) / 100 Else taxaPct = 0
         
-        If IsNumeric(taxaStr) Then
-            taxaPct = CDbl(taxaStr)
-        Else
-            taxaPct = 0
-        End If
+        Dim valorTaxaRS As Double, liqReceber As Double
+        valorTaxaRS = totLiquido * taxaPct
+        liqReceber = totLiquido - valorTaxaRS
         
-        Dim valorDescontoTaxa As Double, valorLiquidoReceber As Double
-        valorDescontoTaxa = totalLiq * (taxaPct / 100)
-        valorLiquidoReceber = totalLiq - valorDescontoTaxa
-        If valorLiquidoReceber < 0 Then valorLiquidoReceber = 0
-        
-        If taxaPct > 0 And totalLiq > 0 Then
-            .TxtTaxaRS.Text = "- " & Format(valorDescontoTaxa, "R$ #,##0.00") & " (" & Format(taxaPct, "0.00") & "%)"
-        Else
-            .TxtTaxaRS.Text = "Taxa: R$ 0,00"
-        End If
-        
-        .TxtValorReceber.Text = Format(valorLiquidoReceber, "R$ #,##0.00")
+        .TxtTaxaRS.Text = Format(valorTaxaRS, "R$ #,##0.00") & " (" & Format(taxaPct, "0.00%") & ")"
+        .TxtValorReceber.Text = Format(liqReceber, "R$ #,##0.00")
     End With
 End Sub
 
@@ -461,7 +487,6 @@ Sub FinalizarVenda()
         totDesc = IIf(IsNumeric(.TxtDesconto.Text), CDbl(.TxtDesconto.Text), 0)
         totLiq = CDbl(Replace(.TxtTotalLiquido.Text, "R$", ""))
         
-        ' Extrai dados de Parcelamento e Taxa
         Dim strParcSalvar As String
         strParcSalvar = Trim(.CboParcelas.Text)
         If InStr(strParcSalvar, "(") > 0 Then
@@ -482,14 +507,19 @@ Sub FinalizarVenda()
         Dim liqReceberSalvar As Double
         liqReceberSalvar = CDbl(Replace(.TxtValorReceber.Text, "R$", ""))
         
-        ' Confirmação com usuário
+        Dim opSalvar As String
+        opSalvar = Trim(ModSeguranca.vNomeOperador)
+        If opSalvar = "" Then opSalvar = "Recepção Geral"
+        
         Dim msgConf As String
         If .CboFormaPagto.Text = "Cartão de Crédito" And InStr(.CboParcelas.Text, "1x") = 0 Then
             msgConf = "Confirmar finalização da Venda Nº " & .TxtIDVenda.Text & "?" & vbCrLf & vbCrLf & _
+                      "• Operador: " & opSalvar & vbCrLf & _
                       "• Total Cliente: " & .TxtTotalLiquido.Text & " em " & .TxtValorParcela.Text & vbCrLf & _
                       "• Previsão Líquida a Receber: " & .TxtValorReceber.Text & " (" & .TxtTaxaRS.Text & ")"
         Else
             msgConf = "Confirmar finalização da Venda Nº " & .TxtIDVenda.Text & " no valor de " & .TxtTotalLiquido.Text & "?" & vbCrLf & _
+                      "• Operador: " & opSalvar & vbCrLf & _
                       "• Forma de Pagamento: " & .CboFormaPagto.Text & vbCrLf & _
                       "• Previsão Líquida a Receber: " & .TxtValorReceber.Text
         End If
@@ -512,8 +542,8 @@ Sub FinalizarVenda()
         PlanVendas.Cells(linV, "J").Value = strParcSalvar
         PlanVendas.Cells(linV, "K").Value = taxaPctSalvar
         PlanVendas.Cells(linV, "L").Value = liqReceberSalvar
+        PlanVendas.Cells(linV, "M").Value = opSalvar ' COLUNA 13: OPERADOR
         
-        ' Formatação das colunas financeiras gravadas
         PlanVendas.Cells(linV, "K").NumberFormat = "0.00%"
         PlanVendas.Cells(linV, "L").NumberFormat = "R$ #,##0.00"
         
@@ -526,23 +556,33 @@ Sub FinalizarVenda()
             linItem = PlanItensVenda.Cells(PlanItensVenda.Rows.Count, "A").End(xlUp).Row + 1
             ultIDItem = ultIDItem + 1
             
-            Dim idProd As String, descProd As String, pUnit As Double, qtd As Double, subt As Double
+            Dim idProd As String, descProd As String, prcItem As Double, qtdItem As Double, subItem As Double
             idProd = .LstItens.List(i, 1)
             descProd = .LstItens.List(i, 2)
-            pUnit = CDbl(Replace(.LstItens.List(i, 3), "R$", ""))
-            qtd = CDbl(.LstItens.List(i, 4))
-            subt = CDbl(Replace(.LstItens.List(i, 5), "R$", ""))
+            prcItem = CDbl(Replace(.LstItens.List(i, 3), "R$", ""))
+            qtdItem = CDbl(.LstItens.List(i, 4))
+            subItem = CDbl(Replace(.LstItens.List(i, 5), "R$", ""))
             
             PlanItensVenda.Cells(linItem, "A").Value = ultIDItem
             PlanItensVenda.Cells(linItem, "B").Value = idVenda
             PlanItensVenda.Cells(linItem, "C").Value = idProd
             PlanItensVenda.Cells(linItem, "D").Value = descProd
-            PlanItensVenda.Cells(linItem, "E").Value = pUnit
-            PlanItensVenda.Cells(linItem, "F").Value = qtd
-            PlanItensVenda.Cells(linItem, "G").Value = subt
+            PlanItensVenda.Cells(linItem, "E").Value = prcItem
+            PlanItensVenda.Cells(linItem, "F").Value = qtdItem
+            PlanItensVenda.Cells(linItem, "G").Value = subItem
+            
+            PlanItensVenda.Cells(linItem, "E").NumberFormat = "R$ #,##0.00"
+            PlanItensVenda.Cells(linItem, "G").NumberFormat = "R$ #,##0.00"
         Next i
         
-        MsgBox "Venda Nº " & Format(idVenda, "0000") & " finalizada e gravada com sucesso!", vbInformation, "Venda Concluída"
+        ' Pergunta de Emissão de Comprovante em PDF
+        Dim pergCupom As VbMsgBoxResult
+        pergCupom = MsgBox("Venda Nº " & Format(idVenda, "0000") & " finalizada com sucesso por " & opSalvar & "!" & vbCrLf & vbCrLf & _
+                           "Deseja emitir o Comprovante de Venda em PDF agora?", vbQuestion + vbYesNo, "Comprovante de Venda")
+                           
+        If pergCupom = vbYes Then
+            Call ModRelatorios.GerarComprovanteVendaPorID(idVenda)
+        End If
         
         Call IniciarNovaVenda
     End With

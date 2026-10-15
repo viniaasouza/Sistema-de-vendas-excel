@@ -18,13 +18,19 @@ Option Explicit
 Private Sub UserForm_Initialize()
     Call ModProdutos.LimparCampos
     Call ModProdutos.BuscarProdutos
+    
+    If UCase(Trim(ModSeguranca.vPerfilAtivo)) = "RECEPCAO" Then
+        TxtPreco.Locked = True
+        TxtPreco.BackColor = 15790320
+        Me.Caption = "Cadastro de Produtos (Modo Consulta - Recepção)"
+    Else
+        TxtPreco.Locked = False
+        TxtPreco.BackColor = &H80000005
+        Me.Caption = "Cadastro de Produtos"
+    End If
 End Sub
 
 Private Sub BtSalvar_Click()
-    Call ModProdutos.SalvarProdutos
-End Sub
-
-Private Sub CommandButton1_Click()
     Call ModProdutos.SalvarProdutos
 End Sub
 
@@ -39,10 +45,7 @@ End Sub
 Private Sub LstDados_Click()
     If LstDados.ListIndex = -1 Then Exit Sub
     
-    ' Guarda o ID do produto selecionado
     ModProdutos.vIDProduto = LstDados.List(LstDados.ListIndex, 0)
-    
-    ' Carrega descrição e preço nos campos
     TxtDescricao.Text = LstDados.List(LstDados.ListIndex, 2)
     
     Dim pStr As String
@@ -50,7 +53,6 @@ Private Sub LstDados_Click()
     pStr = Trim(pStr)
     TxtPreco.Text = pStr
     
-    ' Altera botão para Alterar e habilita Excluir
     BtSalvar.Caption = "ALTERAR"
     On Error Resume Next
     BtExcluir.Enabled = True

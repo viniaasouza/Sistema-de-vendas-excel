@@ -24,6 +24,14 @@ Private Sub UserForm_Initialize()
     Call ModVendas.IniciarNovaVenda
 End Sub
 
+Private Sub BtTrocarOp_Click()
+    Call ModSeguranca.TrocarOperador
+End Sub
+
+Private Sub BtRelatorios_Click()
+    Call ModRelatorios.AbrirRelatorios
+End Sub
+
 ' === BUSCA INTELIGENTE DE CLIENTES AO DIGITAR ===
 Private Sub CboCliente_KeyUp(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
     If KeyCode = vbKeyUp Or KeyCode = vbKeyDown Or KeyCode = vbKeyReturn Or KeyCode = vbKeyTab Or KeyCode = vbKeyEscape Then Exit Sub

@@ -55,6 +55,25 @@ Sistema completo de gestão comercial e ponto de venda (PDV) desenvolvido em **E
 - **Dados da Empresa Configuráveis (`CONFIG`):**
   - Gerenciamento fácil de Razão Social, Nome Fantasia, CNPJ, Telefone, E-mail, Endereço e Mensagem de Rodapé refletidos automaticamente nos relatórios e recibos.
 
+### 🔐 5. Multi-Usuário, Controle de Acesso e Auditoria (`FormLogin` & `ModSeguranca`)
+- **Perfis de Usuário com PIN Rápido:**
+  - `ADMIN`: Acesso irrestrito a configurações, catálogo de preços, relatórios gerenciais e cancelamento de vendas.
+  - `RECEPCAO`: Acesso exclusivo para operação de vendas e reemissão de comprovantes de clientes.
+- **Matriz de Credenciais Pré-Cadastradas (Aba `USUARIOS`):**
+  - **Administrador:** Usuário `admin` | PIN `1234` | Perfil `ADMIN`
+  - **Recepcionista 1:** Operadora `Ana Silva` (`recepcao1`) | PIN `1111` | Perfil `RECEPCAO`
+  - **Recepcionista 2:** Operadora `Bruna Costa` (`recepcao2`) | PIN `2222` | Perfil `RECEPCAO`
+- **Auditoria de Operador em Vendas:**
+  - Registro automático do nome da recepcionista ativa na coluna `M` (`OPERADOR`) da aba `VENDAS`.
+  - Exibição de badge do operador ativo no topo do PDV (`FormVendas`) com botão de **Troca Rápida de Operador**.
+- **Trava de Permissões Críticas:**
+  - **Catálogo de Produtos:** Bloqueio de edição de preços para recepcionistas (`TxtPreco.Locked = True`).
+  - **Relatórios Gerenciais:** Mascaramento de faturamento total (`R$ ***`) e bloqueio de cancelamento de vendas sem PIN de Administrador.
+- **Identidade Visual & Logotipo da Empresa:**
+  - Suporte a logotipo institucional configurável na aba `CONFIG` (`LOGO_PATH`).
+  - Inserção automática da logo no topo dos formulários e no cabeçalho do PDF do comprovante de venda.
+  - Comprovante de venda com assinatura formal: *"Atendido por: [Nome da Recepcionista]"*.
+
 ---
 
 ## 🗂️ Estrutura do Repositório
@@ -64,10 +83,12 @@ Sistema completo de gestão comercial e ponto de venda (PDV) desenvolvido em **E
 ├── .gitignore                   # Arquivos ignorados (bloqueios do Excel e backups)
 ├── README.md                    # Documentação do projeto
 └── src/                         # Código fonte dos módulos e formulários VBA
+    ├── FormLogin.frm/.frx       # Formulário de Autenticação e Troca de Operador
     ├── FormProdutos.frm/.frx    # Formulário e layout do Cadastro de Produtos
     ├── FormClientes.frm/.frx    # Formulário e layout do Cadastro de Clientes
     ├── FormVendas.frm/.frx      # Formulário e layout do Ponto de Venda (PDV)
     ├── FormRelatorios.frm/.frx  # Formulário de Consultas e Relatórios de Vendas
+    ├── ModSeguranca.bas         # Módulo de controle de acesso, perfis e PINs
     ├── ModProdutos.bas          # Regras de negócio de produtos
     ├── ModClientes.bas          # Regras de negócio de clientes
     ├── ModVendas.bas            # Motor de processamento de vendas, carrinho e cartões

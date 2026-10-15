@@ -20,6 +20,14 @@ Private Sub UserForm_Initialize()
     Call ModRelatorios.InicializarFormRelatorios
 End Sub
 
+Private Sub BtTrocarOp_Click()
+    Call ModSeguranca.TrocarOperador
+End Sub
+
+Private Sub BtLogo_Click()
+    Call ModRelatorios.SelecionarLogoEmpresa
+End Sub
+
 Private Sub BtFiltrar_Click()
     Call ModRelatorios.FiltrarVendas
 End Sub
@@ -37,14 +45,21 @@ Private Sub CboFormaPagto_Change()
 End Sub
 
 Private Sub BtExportarPDF_Click()
+    If UCase(Trim(ModSeguranca.vPerfilAtivo)) = "RECEPCAO" Then
+        If Not ModSeguranca.VerificarAutorizacaoAdmin("Exportar Relatório Financeiro Completo para PDF") Then Exit Sub
+    End If
     Call ModRelatorios.GerarRelatorioPDF
 End Sub
 
 Private Sub BtCupomPDF_Click()
+    ' Permitido para Recepção e Administrador
     Call ModRelatorios.GerarComprovanteVendaPDF
 End Sub
 
 Private Sub BtAlternarStatus_Click()
+    If UCase(Trim(ModSeguranca.vPerfilAtivo)) = "RECEPCAO" Then
+        If Not ModSeguranca.VerificarAutorizacaoAdmin("Cancelar ou Reativar Venda") Then Exit Sub
+    End If
     Call ModRelatorios.AlternarStatusVenda
 End Sub
 

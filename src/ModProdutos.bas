@@ -5,11 +5,14 @@ Option Compare Text
 Public vIDProduto As Variant
 
 Sub SalvarProdutos()
+    If UCase(Trim(ModSeguranca.vPerfilAtivo)) = "RECEPCAO" Then
+        If Not ModSeguranca.VerificarAutorizacaoAdmin("Salvar ou Alterar Preço de Produto") Then Exit Sub
+    End If
+    
     With FormProdutos
         .TxtDescricao.BorderColor = &H80000012
         .TxtPreco.BorderColor = &H80000012
         
-        ' 1. Validação de campos
         If Trim(.TxtDescricao.Text) = "" Then
             .TxtDescricao.BorderColor = &HFF&
             MsgBox "Digite o campo Descrição!", vbExclamation, "Cadastro de Produtos"
@@ -40,14 +43,11 @@ Sub SalvarProdutos()
         
         Dim cel As Range
         
-        ' 2. Decisão: Novo Cadastro ou Alteração
         If IsEmpty(vIDProduto) Or vIDProduto = "" Or vIDProduto = 0 Then
-            ' --- NOVO PRODUTO ---
-            ' Checa se já existe produto com mesmo nome
             Set cel = PlanProdutos.Range("B:B").Find(What:=Trim(.TxtDescricao.Text), LookIn:=xlValues, LookAt:=xlWhole)
             If Not cel Is Nothing Then
                 .TxtDescricao.BorderColor = &HFF&
-                MsgBox "Já existe um produto cadastrado com esta descrição!", vbExclamation, "Produto Duplicado"
+                MsgBox "Já existe um produto cadastrado com esta Descrição!", vbExclamation, "Produto Duplicado"
                 .TxtDescricao.SetFocus
                 Exit Sub
             End If
@@ -66,17 +66,30 @@ Sub SalvarProdutos()
             PlanProdutos.Cells(lin, "B").Value = Trim(.TxtDescricao.Text)
             PlanProdutos.Cells(lin, "C").Value = valPreco
             
-            MsgBox "Produto cadastrado com sucesso!", vbInformation, "Sistema de Vendas"
+            MsgBox "Produto cadastrado com sucesso!", vbInformation, "Cadastro de Produtos"
         Else
-            ' --- ALTERAR PRODUTO EXISTENTE ---
             Set cel = PlanProdutos.Range("A:A").Find(What:=vIDProduto, LookIn:=xlValues, LookAt:=xlWhole)
-            If Not cel Is Nothing Then
-                cel.Offset(0, 1).Value = Trim(.TxtDescricao.Text)
-                cel.Offset(0, 2).Value = valPreco
-                MsgBox "Produto alterado com sucesso!", vbInformation, "Sistema de Vendas"
-            Else
-                MsgBox "Código do produto não localizado na planilha!", vbCritical, "Erro"
+            
+            If cel Is Nothing Then
+                MsgBox "Produto não localizado para alteração!", vbCritical, "Erro"
+                Exit Sub
             End If
+            
+            Dim celDup As Range
+            Set celDup = PlanProdutos.Range("B:B").Find(What:=Trim(.TxtDescricao.Text), LookIn:=xlValues, LookAt:=xlWhole)
+            If Not celDup Is Nothing Then
+                If celDup.Row <> cel.Row Then
+                    .TxtDescricao.BorderColor = &HFF&
+                    MsgBox "Já existe outro produto cadastrado com esta Descrição!", vbExclamation, "Produto Duplicado"
+                    .TxtDescricao.SetFocus
+                    Exit Sub
+                End If
+            End If
+            
+            cel.Offset(0, 1).Value = Trim(.TxtDescricao.Text)
+            cel.Offset(0, 2).Value = valPreco
+            
+            MsgBox "Produto alterado com sucesso!", vbInformation, "Cadastro de Produtos"
         End If
         
         Call LimparCampos
@@ -85,29 +98,32 @@ Sub SalvarProdutos()
 End Sub
 
 Sub ExcluirProduto()
+    If UCase(Trim(ModSeguranca.vPerfilAtivo)) = "RECEPCAO" Then
+        If Not ModSeguranca.VerificarAutorizacaoAdmin("Excluir Produto do Catálogo") Then Exit Sub
+    End If
+    
     If IsEmpty(vIDProduto) Or vIDProduto = "" Or vIDProduto = 0 Then
-        MsgBox "Selecione um produto na lista para excluir!", vbExclamation, "Atenção"
+        MsgBox "Selecione um produto na lista para excluir!", vbExclamation, "Excluir Produto"
         Exit Sub
     End If
     
-    If MsgBox("Deseja realmente excluir o produto selecionado?", vbQuestion + vbYesNo, "Confirmar Exclusão") = vbYes Then
-        Dim cel As Range
-        Set cel = PlanProdutos.Range("A:A").Find(What:=vIDProduto, LookIn:=xlValues, LookAt:=xlWhole)
-        
-        If Not cel Is Nothing Then
-            cel.EntireRow.Delete
-            MsgBox "Produto excluído com sucesso!", vbInformation, "Sistema de Vendas"
-        Else
-            MsgBox "Produto não localizado na planilha!", vbCritical, "Erro"
-        End If
-        
+    Dim cel As Range
+    Set cel = PlanProdutos.Range("A:A").Find(What:=vIDProduto, LookIn:=xlValues, LookAt:=xlWhole)
+    
+    If cel Is Nothing Then
+        MsgBox "Produto não encontrado!", vbCritical, "Erro"
+        Exit Sub
+    End If
+    
+    If MsgBox("Deseja realmente excluir o produto: " & cel.Offset(0, 1).Text & "?", vbQuestion + vbYesNo, "Confirmar Exclusão") = vbYes Then
+        cel.EntireRow.Delete
+        MsgBox "Produto excluído com sucesso!", vbInformation, "Exclusão"
         Call LimparCampos
         Call BuscarProdutos
     End If
 End Sub
 
 Sub LimparCampos()
-    vIDProduto = Empty
     With FormProdutos
         .TxtDescricao.Text = ""
         .TxtPreco.Text = ""
@@ -117,7 +133,7 @@ Sub LimparCampos()
         On Error Resume Next
         .BtExcluir.Enabled = False
         On Error GoTo 0
-        .TxtDescricao.SetFocus
+        vIDProduto = Empty
     End With
 End Sub
 
