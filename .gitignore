@@ -1,0 +1,7 @@
+# Excel Temporary and Lock Files
+~$*.xlsx
+~$*.xlsm
+*.tmp
+
+# Local Backups
+*_backup*.xlsm
