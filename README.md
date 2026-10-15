@@ -74,6 +74,17 @@ Sistema completo de gestão comercial e ponto de venda (PDV) desenvolvido em **E
   - Inserção automática da logo no topo dos formulários e no cabeçalho do PDF do comprovante de venda.
   - Comprovante de venda com assinatura formal: *"Atendido por: [Nome da Recepcionista]"*.
 
+### 🖥️ 6. Menu Principal / Dashboard na Planilha (`INÍCIO`)
+- **Tela Inicial Executiva:** Abertura automática ao iniciar a pasta de trabalho com gridlines desativadas e visual de aplicativo.
+- **Botões Estilizados em Formato de Cards:**
+  - 🛒 **Ponto de Venda (PDV):** Abertura instantânea da tela de vendas.
+  - 👥 **Clientes:** Cadastro e consulta rápida.
+  - 📦 **Produtos:** Catálogo de mercadorias.
+  - 📑 **Relatórios & PDF:** Painel de consultas, faturamento e exportação.
+  - 👤 **Trocar Operador:** Troca de turno e login rápido por PIN.
+  - ⚙️ **Configurações & Logo:** Dados da empresa e imagem institucional.
+  - 🔐 **Gerenciar Usuários & PINs:** Acesso direto à aba `USUARIOS` com proteção de PIN administrativo (`1234`).
+
 ---
 
 ## 🗂️ Estrutura do Repositório

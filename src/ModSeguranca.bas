@@ -10,6 +10,22 @@ Public vNomeOperador As String      ' Ex: "Administrador", "Ana Silva", "Bruna C
 Public vPerfilAtivo As String       ' "ADMIN" ou "RECEPCAO"
 Public vIDUsuarioAtivo As Long
 
+Public Sub AbrirGerenciamentoUsuarios()
+    If VerificarAutorizacaoAdmin("Acesso ao Gerenciamento de Usuários") Then
+        On Error Resume Next
+        ThisWorkbook.Sheets("USUARIOS").Visible = -1 ' xlSheetVisible
+        ThisWorkbook.Sheets("USUARIOS").Activate
+        On Error GoTo 0
+        MsgBox "Aba USUARIOS aberta com sucesso!" & vbCrLf & vbCrLf & _
+               "• Você pode editar os nomes e PINs diretamente nas células." & vbCrLf & _
+               "• Para cadastrar novos operadores, basta preencher a próxima linha." & vbCrLf & _
+               "• Para inativar alguém, altere a coluna ATIVO para 'Não'.", vbInformation, "Gerenciamento de Usuários"
+    Else
+        MsgBox "Acesso negado! Esta área requer autorização com o PIN do Administrador.", vbExclamation, "Acesso Restrito"
+    End If
+End Sub
+
+
 Public Function PlanUsuarios() As Worksheet
     On Error Resume Next
     Set PlanUsuarios = ThisWorkbook.Sheets("USUARIOS")
