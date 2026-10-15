@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} FormVendas 
    Caption         =   "UserForm1"
-   ClientHeight    =   2863
+   ClientHeight    =   9513.001
    ClientLeft      =   91
    ClientTop       =   406
-   ClientWidth     =   4298
+   ClientWidth     =   10430
    OleObjectBlob   =   "FormVendas.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -15,9 +15,51 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
 
+Private bBloqueiaBuscaCli As Boolean
+Private bBloqueiaBuscaProd As Boolean
+
 Private Sub UserForm_Initialize()
     Me.Caption = "Emissão de Vendas (PDV)"
     Call ModVendas.IniciarNovaVenda
+End Sub
+
+' === BUSCA INTELIGENTE DE CLIENTES AO DIGITAR ===
+Private Sub CboCliente_KeyUp(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+    ' Ignora setas de navegação (Cima, Baixo, Enter, Tab, Esc)
+    If KeyCode = vbKeyUp Or KeyCode = vbKeyDown Or KeyCode = vbKeyReturn Or KeyCode = vbKeyTab Or KeyCode = vbKeyEscape Then Exit Sub
+    
+    If bBloqueiaBuscaCli Then Exit Sub
+    
+    Dim textoDigitado As String
+    textoDigitado = CboCliente.Text
+    
+    bBloqueiaBuscaCli = True
+    Call ModVendas.FiltrarClientes(textoDigitado)
+    CboCliente.Text = textoDigitado
+    bBloqueiaBuscaCli = False
+    
+    On Error Resume Next
+    If CboCliente.ListCount > 0 Then CboCliente.DropDown
+    On Error GoTo 0
+End Sub
+
+' === BUSCA INTELIGENTE DE PRODUTOS AO DIGITAR ===
+Private Sub CboProduto_KeyUp(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+    If KeyCode = vbKeyUp Or KeyCode = vbKeyDown Or KeyCode = vbKeyReturn Or KeyCode = vbKeyTab Or KeyCode = vbKeyEscape Then Exit Sub
+    
+    If bBloqueiaBuscaProd Then Exit Sub
+    
+    Dim textoDigitado As String
+    textoDigitado = CboProduto.Text
+    
+    bBloqueiaBuscaProd = True
+    Call ModVendas.FiltrarProdutos(textoDigitado)
+    CboProduto.Text = textoDigitado
+    bBloqueiaBuscaProd = False
+    
+    On Error Resume Next
+    If CboProduto.ListCount > 0 Then CboProduto.DropDown
+    On Error GoTo 0
 End Sub
 
 Private Sub CboProduto_Change()

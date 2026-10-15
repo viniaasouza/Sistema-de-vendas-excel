@@ -37,25 +37,11 @@ Sub IniciarNovaVenda()
         ' 2. Data atual do sistema
         .TxtData.Text = Format(Date, "dd/mm/yyyy")
         
-        ' 3. Preencher Combo de Clientes
-        .CboCliente.Clear
-        Dim linC As Long, ultLinC As Long
-        ultLinC = PlanClientes.Cells(PlanClientes.Rows.Count, "A").End(xlUp).Row
-        For linC = 2 To ultLinC
-            If Trim(PlanClientes.Cells(linC, "B").Text) <> "" Then
-                .CboCliente.AddItem PlanClientes.Cells(linC, "A").Text & " - " & PlanClientes.Cells(linC, "B").Text
-            End If
-        Next linC
+        ' 3. Preencher Combo de Clientes com busca ativa (Nome em destaque)
+        Call FiltrarClientes("")
         
-        ' 4. Preencher Combo de Produtos
-        .CboProduto.Clear
-        Dim linP As Long, ultLinP As Long
-        ultLinP = PlanProdutos.Cells(PlanProdutos.Rows.Count, "A").End(xlUp).Row
-        For linP = 2 To ultLinP
-            If Trim(PlanProdutos.Cells(linP, "B").Text) <> "" Then
-                .CboProduto.AddItem PlanProdutos.Cells(linP, "A").Text & " - " & PlanProdutos.Cells(linP, "B").Text
-            End If
-        Next linP
+        ' 4. Preencher Combo de Produtos com busca ativa (Nome em destaque)
+        Call FiltrarProdutos("")
         
         ' 5. Formas de Pagamento
         .CboFormaPagto.Clear
@@ -72,6 +58,52 @@ Sub IniciarNovaVenda()
         .TxtTotalBruto.Text = "R$ 0,00"
         .TxtDesconto.Text = "0,00"
         .TxtTotalLiquido.Text = "R$ 0,00"
+    End With
+End Sub
+
+Sub FiltrarClientes(ByVal textoBusca As String)
+    Dim linC As Long, ultLinC As Long
+    Dim nomeCli As String, idCli As String, cpfCli As String
+    
+    With FormVendas.CboCliente
+        .Clear
+        ultLinC = PlanClientes.Cells(PlanClientes.Rows.Count, "A").End(xlUp).Row
+        If ultLinC < 2 Then Exit Sub
+        
+        For linC = 2 To ultLinC
+            idCli = PlanClientes.Cells(linC, "A").Text
+            nomeCli = PlanClientes.Cells(linC, "B").Text
+            cpfCli = PlanClientes.Cells(linC, "C").Text
+            
+            If Trim(nomeCli) <> "" Then
+                ' Filtra por Nome ou CPF ignorando acentos via AcSQL
+                If Trim(textoBusca) = "" Or (nomeCli Like "*" & AcSQL(textoBusca) & "*") Or (cpfCli Like "*" & textoBusca & "*") Then
+                    .AddItem nomeCli & "  (" & idCli & ")"
+                End If
+            End If
+        Next linC
+    End With
+End Sub
+
+Sub FiltrarProdutos(ByVal textoBusca As String)
+    Dim linP As Long, ultLinP As Long
+    Dim descProd As String, idProd As String
+    
+    With FormVendas.CboProduto
+        .Clear
+        ultLinP = PlanProdutos.Cells(PlanProdutos.Rows.Count, "A").End(xlUp).Row
+        If ultLinP < 2 Then Exit Sub
+        
+        For linP = 2 To ultLinP
+            idProd = PlanProdutos.Cells(linP, "A").Text
+            descProd = PlanProdutos.Cells(linP, "B").Text
+            
+            If Trim(descProd) <> "" Then
+                If Trim(textoBusca) = "" Or (descProd Like "*" & AcSQL(textoBusca) & "*") Then
+                    .AddItem descProd & "  (" & idProd & ")"
+                End If
+            End If
+        Next linP
     End With
 End Sub
 
@@ -93,9 +125,19 @@ Sub ProdutoSelecionado()
     With FormVendas
         If .CboProduto.ListIndex = -1 Then Exit Sub
         
-        Dim partes() As String, idProd As String
-        partes = Split(.CboProduto.Text, " - ")
-        idProd = Trim(partes(0))
+        Dim strProd As String, idProd As String
+        strProd = .CboProduto.Text
+        
+        ' Extrai o ID do produto dentro dos parênteses "(ID)"
+        Dim p1 As Long, p2 As Long
+        p1 = InStrRev(strProd, "(")
+        p2 = InStrRev(strProd, ")")
+        
+        If p1 > 0 And p2 > p1 Then
+            idProd = Trim(Mid(strProd, p1 + 1, p2 - p1 - 1))
+        Else
+            idProd = Trim(Split(strProd, " - ")(0))
+        End If
         
         Dim cel As Range
         Set cel = PlanProdutos.Range("A:A").Find(What:=idProd, LookIn:=xlValues, LookAt:=xlWhole)
@@ -125,7 +167,7 @@ End Sub
 
 Sub AdicionarItem()
     With FormVendas
-        If .CboProduto.ListIndex = -1 Then
+        If .CboProduto.ListIndex = -1 And Trim(.CboProduto.Text) = "" Then
             MsgBox "Selecione um produto para adicionar!", vbExclamation, "Item da Venda"
             .CboProduto.SetFocus
             Exit Sub
@@ -137,10 +179,20 @@ Sub AdicionarItem()
             Exit Sub
         End If
         
-        Dim partes() As String, idProd As String, descProd As String
-        partes = Split(.CboProduto.Text, " - ")
-        idProd = Trim(partes(0))
-        descProd = Trim(partes(1))
+        Dim strProd As String, idProd As String, descProd As String
+        strProd = .CboProduto.Text
+        
+        Dim p1 As Long, p2 As Long
+        p1 = InStrRev(strProd, "(")
+        p2 = InStrRev(strProd, ")")
+        
+        If p1 > 0 And p2 > p1 Then
+            idProd = Trim(Mid(strProd, p1 + 1, p2 - p1 - 1))
+            descProd = Trim(Left(strProd, p1 - 1))
+        Else
+            descProd = Trim(strProd)
+            idProd = "1"
+        End If
         
         Dim pUnit As Double, qtd As Double, subt As Double
         pUnit = CDbl(Replace(.TxtPrecoUnit.Text, "R$", ""))
@@ -148,14 +200,12 @@ Sub AdicionarItem()
         subt = pUnit * qtd
         
         If vItemIndexEmEdicao >= 0 And vItemIndexEmEdicao < .LstItens.ListCount Then
-            ' Atualiza item que estava em edição
             .LstItens.List(vItemIndexEmEdicao, 1) = idProd
             .LstItens.List(vItemIndexEmEdicao, 2) = descProd
             .LstItens.List(vItemIndexEmEdicao, 3) = Format(pUnit, "R$ #,##0.00")
             .LstItens.List(vItemIndexEmEdicao, 4) = qtd
             .LstItens.List(vItemIndexEmEdicao, 5) = Format(subt, "R$ #,##0.00")
         Else
-            ' Novo item na lista do carrinho
             Dim idx As Long
             idx = .LstItens.ListCount
             .LstItens.AddItem
@@ -182,7 +232,6 @@ Sub RemoverItem()
         If MsgBox("Deseja remover este item da venda?", vbQuestion + vbYesNo, "Remover Item") = vbYes Then
             .LstItens.RemoveItem .LstItens.ListIndex
             
-            ' Renumerar linhas da coluna 0
             Dim i As Long
             For i = 0 To .LstItens.ListCount - 1
                 .LstItens.List(i, 0) = i + 1
@@ -199,11 +248,13 @@ Sub CarregarItemParaEdicao()
         If .LstItens.ListIndex = -1 Then Exit Sub
         vItemIndexEmEdicao = .LstItens.ListIndex
         
-        Dim idProd As String, i As Long
+        Dim idProd As String, descProd As String, i As Long
         idProd = .LstItens.List(vItemIndexEmEdicao, 1)
+        descProd = .LstItens.List(vItemIndexEmEdicao, 2)
         
+        ' Procura no CboProduto
         For i = 0 To .CboProduto.ListCount - 1
-            If .CboProduto.List(i) Like idProd & " - *" Then
+            If .CboProduto.List(i) Like "*(" & idProd & ")" Or .CboProduto.List(i) Like descProd & "*" Then
                 .CboProduto.ListIndex = i
                 Exit For
             End If
@@ -254,9 +305,8 @@ End Sub
 
 Sub FinalizarVenda()
     With FormVendas
-        ' 1. Validações
-        If .CboCliente.ListIndex = -1 Then
-            MsgBox "Selecione o Cliente para finalizar a venda!", vbExclamation, "Finalizar Venda"
+        If Trim(.CboCliente.Text) = "" Then
+            MsgBox "Selecione ou digite o Cliente para finalizar a venda!", vbExclamation, "Finalizar Venda"
             .CboCliente.SetFocus
             Exit Sub
         End If
@@ -273,16 +323,30 @@ Sub FinalizarVenda()
             Exit Sub
         End If
         
-        ' Confirmação com usuário
         Dim msgConf As String
         msgConf = "Confirmar finalização da Venda Nº " & .TxtIDVenda.Text & " no valor de " & .TxtTotalLiquido.Text & "?"
         If MsgBox(msgConf, vbQuestion + vbYesNo, "Confirmar Venda") = vbNo Then Exit Sub
         
-        ' 2. Dados do Cliente e Venda
-        Dim partesC() As String, idCli As String, nomeCli As String
-        partesC = Split(.CboCliente.Text, " - ")
-        idCli = Trim(partesC(0))
-        nomeCli = Trim(partesC(1))
+        Dim strCliente As String, idCli As String, nomeCli As String
+        strCliente = Trim(.CboCliente.Text)
+        
+        Dim p1 As Long, p2 As Long
+        p1 = InStrRev(strCliente, "(")
+        p2 = InStrRev(strCliente, ")")
+        
+        If p1 > 0 And p2 > p1 Then
+            idCli = Trim(Mid(strCliente, p1 + 1, p2 - p1 - 1))
+            nomeCli = Trim(Left(strCliente, p1 - 1))
+        Else
+            nomeCli = strCliente
+            Dim celC As Range
+            Set celC = PlanClientes.Range("B:B").Find(What:=nomeCli, LookIn:=xlValues, LookAt:=xlWhole)
+            If Not celC Is Nothing Then
+                idCli = celC.Offset(0, -1).Text
+            Else
+                idCli = "1"
+            End If
+        End If
         
         Dim idVenda As Long
         idVenda = Val(.TxtIDVenda.Text)
@@ -292,7 +356,6 @@ Sub FinalizarVenda()
         totDesc = IIf(IsNumeric(.TxtDesconto.Text), CDbl(.TxtDesconto.Text), 0)
         totLiq = CDbl(Replace(.TxtTotalLiquido.Text, "R$", ""))
         
-        ' 3. Gravar Cabeçalho da Venda na aba VENDAS
         Dim linV As Long
         linV = PlanVendas.Cells(PlanVendas.Rows.Count, "A").End(xlUp).Row + 1
         
@@ -306,7 +369,6 @@ Sub FinalizarVenda()
         PlanVendas.Cells(linV, "H").Value = .CboFormaPagto.Text
         PlanVendas.Cells(linV, "I").Value = "Concluída"
         
-        ' 4. Gravar Itens na aba ITENS_VENDA
         Dim i As Long, linItem As Long, ultIDItem As Long
         ultIDItem = PlanItensVenda.Cells(PlanItensVenda.Rows.Count, "A").End(xlUp).Row - 1
         If ultIDItem < 0 Then ultIDItem = 0
@@ -333,7 +395,6 @@ Sub FinalizarVenda()
         
         MsgBox "Venda Nº " & Format(idVenda, "0000") & " finalizada e gravada com sucesso!", vbInformation, "Venda Concluída"
         
-        ' 5. Iniciar nova venda limpa
         Call IniciarNovaVenda
     End With
 End Sub
