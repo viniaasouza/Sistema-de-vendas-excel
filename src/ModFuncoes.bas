@@ -1,5 +1,4 @@
 Attribute VB_Name = "ModFuncoes"
-Attribute VB_Name = "ModFuncoes"
 Option Explicit
 
 ' ========================================================
