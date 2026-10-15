@@ -52,12 +52,61 @@ Sub IniciarNovaVenda()
         .CboFormaPagto.AddItem "Boleto Bancário"
         .CboFormaPagto.ListIndex = 1 ' PIX como padrão
         
-        ' 6. Resetar campos de item e totais
+        ' 6. Parcelas (1x a 12x)
+        .CboParcelas.Clear
+        .CboParcelas.AddItem "1x (À vista)"
+        .CboParcelas.AddItem "2x"
+        .CboParcelas.AddItem "3x"
+        .CboParcelas.AddItem "4x"
+        .CboParcelas.AddItem "5x"
+        .CboParcelas.AddItem "6x"
+        .CboParcelas.AddItem "7x"
+        .CboParcelas.AddItem "8x"
+        .CboParcelas.AddItem "9x"
+        .CboParcelas.AddItem "10x"
+        .CboParcelas.AddItem "11x"
+        .CboParcelas.AddItem "12x"
+        .CboParcelas.ListIndex = 0
+        
+        ' 7. Resetar campos de item e totais
         Call LimparCamposItem
         .LstItens.Clear
         .TxtTotalBruto.Text = "R$ 0,00"
         .TxtDesconto.Text = "0,00"
         .TxtTotalLiquido.Text = "R$ 0,00"
+        .TxtTaxaCartao.Text = "0,00"
+        
+        ' 8. Atualizar estado dos campos de pagamento e totais
+        Call FormaPagtoAlterada
+    End With
+End Sub
+
+Sub FormaPagtoAlterada()
+    With FormVendas
+        Dim forma As String
+        forma = Trim(.CboFormaPagto.Text)
+        
+        If forma = "Cartão de Crédito" Then
+            .CboParcelas.Enabled = True
+            .TxtTaxaCartao.Enabled = True
+            If Trim(.TxtTaxaCartao.Text) = "" Or Val(Replace(.TxtTaxaCartao.Text, ",", ".")) = 0 Then
+                .TxtTaxaCartao.Text = "3,50"
+            End If
+        ElseIf forma = "Cartão de Débito" Then
+            .CboParcelas.ListIndex = 0
+            .CboParcelas.Enabled = False
+            .TxtTaxaCartao.Enabled = True
+            If Trim(.TxtTaxaCartao.Text) = "" Or Val(Replace(.TxtTaxaCartao.Text, ",", ".")) = 0 Then
+                .TxtTaxaCartao.Text = "1,50"
+            End If
+        Else
+            .CboParcelas.ListIndex = 0
+            .CboParcelas.Enabled = False
+            .TxtTaxaCartao.Text = "0,00"
+            .TxtTaxaCartao.Enabled = False
+        End If
+        
+        Call RecalcularTotaisVenda
     End With
 End Sub
 
@@ -76,7 +125,6 @@ Sub FiltrarClientes(ByVal textoBusca As String)
             cpfCli = PlanClientes.Cells(linC, "C").Text
             
             If Trim(nomeCli) <> "" Then
-                ' Filtra por Nome ou CPF ignorando acentos via AcSQL
                 If Trim(textoBusca) = "" Or (nomeCli Like "*" & AcSQL(textoBusca) & "*") Or (cpfCli Like "*" & textoBusca & "*") Then
                     .AddItem nomeCli & "  (" & idCli & ")"
                 End If
@@ -128,7 +176,6 @@ Sub ProdutoSelecionado()
         Dim strProd As String, idProd As String
         strProd = .CboProduto.Text
         
-        ' Extrai o ID do produto dentro dos parênteses "(ID)"
         Dim p1 As Long, p2 As Long
         p1 = InStrRev(strProd, "(")
         p2 = InStrRev(strProd, ")")
@@ -252,7 +299,6 @@ Sub CarregarItemParaEdicao()
         idProd = .LstItens.List(vItemIndexEmEdicao, 1)
         descProd = .LstItens.List(vItemIndexEmEdicao, 2)
         
-        ' Procura no CboProduto
         For i = 0 To .CboProduto.ListCount - 1
             If .CboProduto.List(i) Like "*(" & idProd & ")" Or .CboProduto.List(i) Like descProd & "*" Then
                 .CboProduto.ListIndex = i
@@ -279,7 +325,7 @@ Sub RecalcularTotaisVenda()
         totalBruto = 0
         
         For i = 0 To .LstItens.ListCount - 1
-            Dim vSubt As Double, subtStr As String
+            Dim subtStr As String
             subtStr = Replace(.LstItens.List(i, 5), "R$", "")
             subtStr = Trim(subtStr)
             If IsNumeric(subtStr) Then
@@ -300,6 +346,57 @@ Sub RecalcularTotaisVenda()
         If totalLiq < 0 Then totalLiq = 0
         
         .TxtTotalLiquido.Text = Format(totalLiq, "R$ #,##0.00")
+        
+        ' -------------------------------------------------------------
+        ' Cálculo de Parcelas e Taxa da Maquininha (Cartão / Previsão)
+        ' -------------------------------------------------------------
+        Dim numParc As Long
+        Dim strParc As String
+        strParc = Trim(.CboParcelas.Text)
+        
+        If InStr(strParc, "x") > 0 Then
+            numParc = Val(Split(strParc, "x")(0))
+        Else
+            numParc = 1
+        End If
+        If numParc < 1 Then numParc = 1
+        
+        If totalLiq > 0 Then
+            Dim vParc As Double
+            vParc = totalLiq / numParc
+            If numParc > 1 Then
+                .TxtValorParcela.Text = numParc & "x de " & Format(vParc, "R$ #,##0.00")
+            Else
+                .TxtValorParcela.Text = Format(totalLiq, "R$ #,##0.00") & " (À vista)"
+            End If
+        Else
+            .TxtValorParcela.Text = "R$ 0,00"
+        End If
+        
+        ' Taxa % da maquininha
+        Dim taxaStr As String, taxaPct As Double
+        taxaStr = Trim(Replace(.TxtTaxaCartao.Text, "%", ""))
+        taxaStr = Replace(taxaStr, ".", Application.International(xlDecimalSeparator))
+        taxaStr = Replace(taxaStr, ",", Application.International(xlDecimalSeparator))
+        
+        If IsNumeric(taxaStr) Then
+            taxaPct = CDbl(taxaStr)
+        Else
+            taxaPct = 0
+        End If
+        
+        Dim valorDescontoTaxa As Double, valorLiquidoReceber As Double
+        valorDescontoTaxa = totalLiq * (taxaPct / 100)
+        valorLiquidoReceber = totalLiq - valorDescontoTaxa
+        If valorLiquidoReceber < 0 Then valorLiquidoReceber = 0
+        
+        If taxaPct > 0 And totalLiq > 0 Then
+            .TxtTaxaRS.Text = "- " & Format(valorDescontoTaxa, "R$ #,##0.00") & " (" & Format(taxaPct, "0.00") & "%)"
+        Else
+            .TxtTaxaRS.Text = "Taxa: R$ 0,00"
+        End If
+        
+        .TxtValorReceber.Text = Format(valorLiquidoReceber, "R$ #,##0.00")
     End With
 End Sub
 
@@ -322,10 +419,6 @@ Sub FinalizarVenda()
             .CboFormaPagto.SetFocus
             Exit Sub
         End If
-        
-        Dim msgConf As String
-        msgConf = "Confirmar finalização da Venda Nº " & .TxtIDVenda.Text & " no valor de " & .TxtTotalLiquido.Text & "?"
-        If MsgBox(msgConf, vbQuestion + vbYesNo, "Confirmar Venda") = vbNo Then Exit Sub
         
         Dim strCliente As String, idCli As String, nomeCli As String
         strCliente = Trim(.CboCliente.Text)
@@ -356,6 +449,42 @@ Sub FinalizarVenda()
         totDesc = IIf(IsNumeric(.TxtDesconto.Text), CDbl(.TxtDesconto.Text), 0)
         totLiq = CDbl(Replace(.TxtTotalLiquido.Text, "R$", ""))
         
+        ' Extrai dados de Parcelamento e Taxa
+        Dim strParcSalvar As String
+        strParcSalvar = Trim(.CboParcelas.Text)
+        If InStr(strParcSalvar, "(") > 0 Then
+            strParcSalvar = Trim(Left(strParcSalvar, InStr(strParcSalvar, "(") - 1))
+        End If
+        If strParcSalvar = "" Then strParcSalvar = "1x"
+        
+        Dim taxaPctSalvar As Double, taxaStr As String
+        taxaStr = Trim(Replace(.TxtTaxaCartao.Text, "%", ""))
+        taxaStr = Replace(taxaStr, ".", Application.International(xlDecimalSeparator))
+        taxaStr = Replace(taxaStr, ",", Application.International(xlDecimalSeparator))
+        If IsNumeric(taxaStr) Then
+            taxaPctSalvar = CDbl(taxaStr) / 100
+        Else
+            taxaPctSalvar = 0
+        End If
+        
+        Dim liqReceberSalvar As Double
+        liqReceberSalvar = CDbl(Replace(.TxtValorReceber.Text, "R$", ""))
+        
+        ' Confirmação com usuário
+        Dim msgConf As String
+        If .CboFormaPagto.Text = "Cartão de Crédito" And InStr(.CboParcelas.Text, "1x") = 0 Then
+            msgConf = "Confirmar finalização da Venda Nº " & .TxtIDVenda.Text & "?" & vbCrLf & vbCrLf & _
+                      "• Total Cliente: " & .TxtTotalLiquido.Text & " em " & .TxtValorParcela.Text & vbCrLf & _
+                      "• Previsão Líquida a Receber: " & .TxtValorReceber.Text & " (" & .TxtTaxaRS.Text & ")"
+        Else
+            msgConf = "Confirmar finalização da Venda Nº " & .TxtIDVenda.Text & " no valor de " & .TxtTotalLiquido.Text & "?" & vbCrLf & _
+                      "• Forma de Pagamento: " & .CboFormaPagto.Text & vbCrLf & _
+                      "• Previsão Líquida a Receber: " & .TxtValorReceber.Text
+        End If
+        
+        If MsgBox(msgConf, vbQuestion + vbYesNo, "Confirmar Venda") = vbNo Then Exit Sub
+        
+        ' Gravar Cabeçalho da Venda na aba VENDAS
         Dim linV As Long
         linV = PlanVendas.Cells(PlanVendas.Rows.Count, "A").End(xlUp).Row + 1
         
@@ -368,7 +497,15 @@ Sub FinalizarVenda()
         PlanVendas.Cells(linV, "G").Value = totLiq
         PlanVendas.Cells(linV, "H").Value = .CboFormaPagto.Text
         PlanVendas.Cells(linV, "I").Value = "Concluída"
+        PlanVendas.Cells(linV, "J").Value = strParcSalvar
+        PlanVendas.Cells(linV, "K").Value = taxaPctSalvar
+        PlanVendas.Cells(linV, "L").Value = liqReceberSalvar
         
+        ' Formatação das colunas financeiras gravadas
+        PlanVendas.Cells(linV, "K").NumberFormat = "0.00%"
+        PlanVendas.Cells(linV, "L").NumberFormat = "R$ #,##0.00"
+        
+        ' Gravar Itens na aba ITENS_VENDA
         Dim i As Long, linItem As Long, ultIDItem As Long
         ultIDItem = PlanItensVenda.Cells(PlanItensVenda.Rows.Count, "A").End(xlUp).Row - 1
         If ultIDItem < 0 Then ultIDItem = 0
@@ -398,4 +535,5 @@ Sub FinalizarVenda()
         Call IniciarNovaVenda
     End With
 End Sub
+
 

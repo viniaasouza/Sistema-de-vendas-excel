@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} FormVendas 
    Caption         =   "UserForm1"
-   ClientHeight    =   9513.001
+   ClientHeight    =   10703
    ClientLeft      =   91
    ClientTop       =   406
-   ClientWidth     =   10430
+   ClientWidth     =   10521
    OleObjectBlob   =   "FormVendas.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -25,9 +25,7 @@ End Sub
 
 ' === BUSCA INTELIGENTE DE CLIENTES AO DIGITAR ===
 Private Sub CboCliente_KeyUp(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
-    ' Ignora setas de navegação (Cima, Baixo, Enter, Tab, Esc)
     If KeyCode = vbKeyUp Or KeyCode = vbKeyDown Or KeyCode = vbKeyReturn Or KeyCode = vbKeyTab Or KeyCode = vbKeyEscape Then Exit Sub
-    
     If bBloqueiaBuscaCli Then Exit Sub
     
     Dim textoDigitado As String
@@ -46,7 +44,6 @@ End Sub
 ' === BUSCA INTELIGENTE DE PRODUTOS AO DIGITAR ===
 Private Sub CboProduto_KeyUp(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
     If KeyCode = vbKeyUp Or KeyCode = vbKeyDown Or KeyCode = vbKeyReturn Or KeyCode = vbKeyTab Or KeyCode = vbKeyEscape Then Exit Sub
-    
     If bBloqueiaBuscaProd Then Exit Sub
     
     Dim textoDigitado As String
@@ -90,6 +87,19 @@ End Sub
 
 Private Sub BtRemoverItem_Click()
     Call ModVendas.RemoverItem
+End Sub
+
+' === CONTROLE DE FORMA DE PAGAMENTO E CARTÃO ===
+Private Sub CboFormaPagto_Change()
+    Call ModVendas.FormaPagtoAlterada
+End Sub
+
+Private Sub CboParcelas_Change()
+    Call ModVendas.RecalcularTotaisVenda
+End Sub
+
+Private Sub TxtTaxaCartao_Change()
+    Call ModVendas.RecalcularTotaisVenda
 End Sub
 
 Private Sub TxtDesconto_Change()
