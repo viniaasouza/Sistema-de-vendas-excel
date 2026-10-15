@@ -36,6 +36,47 @@ Private Function LimparMoeda(ByVal valStr As String) As Double
     End If
 End Function
 
+Public Function ObterPastaLocalRelatorios() As String
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    
+    Dim caminhoBase As String
+    caminhoBase = ThisWorkbook.Path
+    
+    ' Tratamento para caminhos do OneDrive (URL http / https)
+    If LCase(Left(caminhoBase, 4)) = "http" Then
+        Dim userProf As String
+        userProf = Environ("USERPROFILE")
+        
+        If fso.FolderExists(userProf & "\OneDrive\Área de Trabalho\SISTEMA DE VENDAS") Then
+            caminhoBase = userProf & "\OneDrive\Área de Trabalho\SISTEMA DE VENDAS"
+        ElseIf fso.FolderExists(userProf & "\OneDrive\Desktop\SISTEMA DE VENDAS") Then
+            caminhoBase = userProf & "\OneDrive\Desktop\SISTEMA DE VENDAS"
+        ElseIf fso.FolderExists(userProf & "\Área de Trabalho\SISTEMA DE VENDAS") Then
+            caminhoBase = userProf & "\Área de Trabalho\SISTEMA DE VENDAS"
+        ElseIf fso.FolderExists(userProf & "\Desktop\SISTEMA DE VENDAS") Then
+            caminhoBase = userProf & "\Desktop\SISTEMA DE VENDAS"
+        Else
+            caminhoBase = userProf & "\Desktop"
+        End If
+    End If
+    
+    Dim pastaDestino As String
+    pastaDestino = caminhoBase & "\Relatorios"
+    
+    If Not fso.FolderExists(pastaDestino) Then
+        On Error Resume Next
+        fso.CreateFolder pastaDestino
+        On Error GoTo 0
+    End If
+    
+    If fso.FolderExists(pastaDestino) Then
+        ObterPastaLocalRelatorios = pastaDestino
+    Else
+        ObterPastaLocalRelatorios = caminhoBase
+    End If
+End Function
+
 Sub AbrirRelatorios()
     FormRelatorios.Show
 End Sub
@@ -125,7 +166,6 @@ Sub FiltrarVendas()
             
             idV = Format(PlanVendas.Cells(r, "A").Value, "0000")
             
-            ' Tratamento ultra seguro para datas
             If IsDate(PlanVendas.Cells(r, "B").Value) Then
                 dtV = CDate(PlanVendas.Cells(r, "B").Value)
             ElseIf IsDate(PlanVendas.Cells(r, "B").Text) Then
@@ -323,20 +363,25 @@ Sub GerarRelatorioPDF()
         End With
         
         Dim pastaRel As String, nomeArq As String, caminhoPDF As String
-        pastaRel = ThisWorkbook.Path & "\Relatorios"
-        If Dir(pastaRel, vbDirectory) = "" Then
-            MkDir pastaRel
-        End If
+        pastaRel = ObterPastaLocalRelatorios()
         
         nomeArq = "Relatorio_Vendas_" & Format(Now, "yyyymmdd_hhnnss") & ".pdf"
-        caminhoPDF = pastaRel & "" & nomeArq
+        caminhoPDF = pastaRel & "\" & nomeArq
         
+        On Error Resume Next
         wsR.ExportAsFixedFormat Type:=0, _
                                 Filename:=caminhoPDF, _
                                 Quality:=0, _
                                 IncludeDocProperties:=True, _
                                 IgnorePrintAreas:=False, _
                                 OpenAfterPublish:=True
+                                
+        If Err.Number <> 0 Then
+            MsgBox "Não foi possível gerar o PDF: " & Err.Description, vbCritical, "Erro de Exportação"
+            Err.Clear
+            Exit Sub
+        End If
+        On Error GoTo 0
                                 
         MsgBox "Relatório em PDF gerado com sucesso!" & vbCrLf & vbCrLf & _
                "Salvo em: " & caminhoPDF, vbInformation, "Relatório PDF Gerado"
@@ -467,10 +512,11 @@ Sub GerarComprovanteVendaPDF()
         wsC.Columns.AutoFit()
         
         Dim pastaRel As String, caminhoPDF As String
-        pastaRel = ThisWorkbook.Path & "\Relatorios"
-        If Dir(pastaRel, vbDirectory) = "" Then MkDir pastaRel
+        pastaRel = ObterPastaLocalRelatorios()
         
-        caminhoPDF = pastaRel & "\Comprovante_Venda_" & Format(idSel, "0000") & ".pdf"
+        caminhoPDF = pastaRel & "\" & "Comprovante_Venda_" & Format(idSel, "0000") & ".pdf"
+        
+        On Error Resume Next
         wsC.ExportAsFixedFormat Type:=0, _
                                 Filename:=caminhoPDF, _
                                 Quality:=0, _
@@ -478,12 +524,18 @@ Sub GerarComprovanteVendaPDF()
                                 IgnorePrintAreas:=False, _
                                 OpenAfterPublish:=True
                                 
+        If Err.Number <> 0 Then
+            MsgBox "Não foi possível gerar o comprovante em PDF: " & Err.Description, vbCritical, "Erro de Exportação"
+            Err.Clear
+        Else
+            MsgBox "Comprovante de Venda gerado com sucesso em PDF!" & vbCrLf & vbCrLf & _
+                   "Arquivo: " & caminhoPDF, vbInformation, "Comprovante Emitido"
+        End If
+        On Error GoTo 0
+                                
         Application.DisplayAlerts = False
         wsC.Delete
         Application.DisplayAlerts = True
-        
-        MsgBox "Comprovante de Venda gerado com sucesso em PDF!" & vbCrLf & _
-               "Arquivo: " & caminhoPDF, vbInformation, "Comprovante Emitido"
     End With
 End Sub
 
