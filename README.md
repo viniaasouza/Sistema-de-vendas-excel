@@ -74,16 +74,25 @@ Sistema completo de gestão comercial e ponto de venda (PDV) desenvolvido em **E
   - Inserção automática da logo no topo dos formulários e no cabeçalho do PDF do comprovante de venda.
   - Comprovante de venda com assinatura formal: *"Atendido por: [Nome da Recepcionista]"*.
 
-### 🖥️ 6. Menu Principal / Dashboard na Planilha (`INÍCIO`)
-- **Tela Inicial Executiva:** Abertura automática ao iniciar a pasta de trabalho com gridlines desativadas e visual de aplicativo.
-- **Botões Estilizados em Formato de Cards:**
-  - 🛒 **Ponto de Venda (PDV):** Abertura instantânea da tela de vendas.
-  - 👥 **Clientes:** Cadastro e consulta rápida.
-  - 📦 **Produtos:** Catálogo de mercadorias.
-  - 📑 **Relatórios & PDF:** Painel de consultas, faturamento e exportação.
-  - 👤 **Trocar Operador:** Troca de turno e login rápido por PIN.
-  - ⚙️ **Configurações & Logo:** Dados da empresa e imagem institucional.
-  - 🔐 **Gerenciar Usuários & PINs:** Acesso direto à aba `USUARIOS` com proteção de PIN administrativo (`1234`).
+### 🖥️ 6. Super Dashboard Gerencial Integrado & KPIs (`INÍCIO` - Aulas 22 a 25)
+- **Tela Inicial Executiva Integrada:**
+  - Abertura automática ao iniciar a pasta de trabalho com gridlines desativadas e visual moderno de aplicação comercial.
+- **Barra Superior de Acesso Rápido:**
+  - 🛒 **PDV (Vendas)** | 👥 **Clientes** | 📦 **Produtos** | 📑 **Relatórios** | 👤 **Trocar Operador**
+- **Cards de Indicadores de Desempenho em Tempo Real (KPIs - Aulas 22 e 23):**
+  - 💰 **Faturamento Total Líquido:** Soma das vendas concluídas.
+  - 🛒 **Vendas Concluídas:** Total de pedidos e volume de itens vendidos.
+  - 🎯 **Ticket Médio por Venda:** Valor médio gasto por cliente.
+  - ⏳ **Previsão Líquida a Receber:** Faturamento deduzido das taxas de cartão.
+- **Rankings de Inteligência Comercial (Aulas 24 e 25):**
+  - 🏆 **TOP 5 Melhores Clientes:** Ranking automático dos 5 clientes com maior volume financeiro e total de compras.
+  - 🥇 **TOP 5 Produtos Mais Vendidos:** Ranking automático dos 5 produtos líderes em unidades vendidas e faturamento gerado.
+  - 💳 **Faturamento por Forma de Pagamento:** Resumo consolidado de entradas por Dinheiro, PIX, Cartão de Crédito, Débito e Boleto.
+  - 🔄 **Botão de Atualização Instantânea:** Recálculo em tempo real via macro `ModDashboard.AtualizarDashboard`.
+- **Blindagem de Segurança da Aba `USUARIOS`:**
+  - Configuração permanente em modo **`xlSheetVeryHidden` (2)**: a aba é completamente invisível na barra de planilhas e **impossível de reexibir** pelo menu comum do Excel com o botão direito.
+  - Acesso exclusivo aos logins e senhas através do botão **`🔐 GERENCIAR USUÁRIOS & PINS`**, que exige a confirmação com o PIN do Administrador (`1234`).
+  - Auto-blindagem nos eventos `Workbook_Open` e `Workbook_BeforeClose`.
 
 ---
 
@@ -99,7 +108,8 @@ Sistema completo de gestão comercial e ponto de venda (PDV) desenvolvido em **E
     ├── FormClientes.frm/.frx    # Formulário e layout do Cadastro de Clientes
     ├── FormVendas.frm/.frx      # Formulário e layout do Ponto de Venda (PDV)
     ├── FormRelatorios.frm/.frx  # Formulário de Consultas e Relatórios de Vendas
-    ├── ModSeguranca.bas         # Módulo de controle de acesso, perfis e PINs
+    ├── ModDashboard.bas         # Motor de KPIs, rankings TOP 5 e consolidação do painel
+    ├── ModSeguranca.bas         # Controle de acesso, perfis, PINs e blindagem VeryHidden
     ├── ModProdutos.bas          # Regras de negócio de produtos
     ├── ModClientes.bas          # Regras de negócio de clientes
     ├── ModVendas.bas            # Motor de processamento de vendas, carrinho e cartões
