@@ -33,16 +33,16 @@ Private Sub ConfigurarLayoutClientes()
     LblEmail.Left = 16: LblEmail.Top = 112: LblEmail.Width = 120: LblEmail.Height = 12: LblEmail.Caption = "E-mail:"
     TxtEmail.Left = 16: TxtEmail.Top = 124: TxtEmail.Width = 210: TxtEmail.Height = 20
     
-    LblBairro.Left = 242: LblBairro.Top = 112: LblBairro.Width = 120: LblBairro.Height = 12: LblBairro.Caption = "Bairro:"
+    LblBairro.Left = 242: LblBairro.Top = 112: LblBairro.Width = 120: LblBairro.Height = 12: LblBairro.Caption = "Bairro:": LblBairro.ForeColor = 0: LblBairro.BackStyle = 0
     TxtBairro.Left = 242: TxtBairro.Top = 124: TxtBairro.Width = 210: TxtBairro.Height = 20
     
     LblEndereco.Left = 16: LblEndereco.Top = 150: LblEndereco.Width = 240: LblEndereco.Height = 12: LblEndereco.Caption = "Endereço Completo (Rua, Nº, Compl.):"
     TxtEndereco.Left = 16: TxtEndereco.Top = 162: TxtEndereco.Width = 436: TxtEndereco.Height = 20
     
-    LblDataNasc.Left = 16: LblDataNasc.Top = 188: LblDataNasc.Width = 105: LblDataNasc.Height = 12: LblDataNasc.Caption = "Data Nascimento:"
+    LblDataNasc.Left = 16: LblDataNasc.Top = 188: LblDataNasc.Width = 105: LblDataNasc.Height = 12: LblDataNasc.Caption = "Data Nascimento:": LblDataNasc.ForeColor = 0: LblDataNasc.BackStyle = 0
     TxtDataNasc.Left = 16: TxtDataNasc.Top = 200: TxtDataNasc.Width = 105: TxtDataNasc.Height = 20
     
-    LblIdade.Left = 132: LblIdade.Top = 188: LblIdade.Width = 80: LblIdade.Height = 12: LblIdade.Caption = "Idade (Auto):"
+    LblIdade.Left = 132: LblIdade.Top = 188: LblIdade.Width = 80: LblIdade.Height = 12: LblIdade.Caption = "Idade (Auto):": LblIdade.ForeColor = 0: LblIdade.BackStyle = 0
     TxtIdade.Left = 132: TxtIdade.Top = 200: TxtIdade.Width = 85: TxtIdade.Height = 20
     TxtIdade.Locked = True: TxtIdade.BackColor = 15790320
     

@@ -2,10 +2,8 @@ Attribute VB_Name = "ModProdutosServicos"
 Option Explicit
 Option Compare Text
 
-' =============================================================
-' MÓDULO DE GESTÃO DE PRODUTOS, SERVIÇOS & INVENTÁRIO (FASE 8)
-' =============================================================
 Public vIDProduto As Variant
+Public bSincronizandoPlanilha As Boolean
 
 Public Function PlanProdutosServicos() As Worksheet
     On Error Resume Next
@@ -30,6 +28,9 @@ Public Sub SalvarProdutosServicos()
     Dim wsP As Worksheet
     Set wsP = PlanProdutosServicos()
     If wsP Is Nothing Then Exit Sub
+    On Error Resume Next
+    wsP.Unprotect "VendasSeguras2026"
+    On Error GoTo 0
     
     With FormProdutos
         .TxtDescricao.BorderColor = &H80000012
@@ -43,22 +44,24 @@ Public Sub SalvarProdutosServicos()
         End If
         
         Dim precoFinalStr As String, precoCustoStr As String, margemStr As String
-        precoFinalStr = Replace(Replace(.TxtPreco.Text, "R$", ""), " ", "")
-        precoCustoStr = Replace(Replace(.TxtPrecoCusto.Text, "R$", ""), " ", "")
-        margemStr = Replace(Replace(.TxtMargem.Text, "%", ""), " ", "")
+        precoFinalStr = Replace(Replace(Replace(.TxtPreco.Text, "R$", ""), " ", ""), ",", ".")
+        precoCustoStr = Replace(Replace(Replace(.TxtPrecoCusto.Text, "R$", ""), " ", ""), ",", ".")
+        margemStr = Replace(Replace(Replace(.TxtMargem.Text, "%", ""), " ", ""), ",", ".")
         
         Dim valPrecoFinal As Double, valPrecoCusto As Double, valMargem As Double
-        valPrecoFinal = IIf(IsNumeric(precoFinalStr), CDbl(precoFinalStr), 0#)
-        valPrecoCusto = IIf(IsNumeric(precoCustoStr), CDbl(precoCustoStr), 0#)
-        valMargem = IIf(IsNumeric(margemStr), CDbl(margemStr), 0#)
+        valPrecoFinal = Val(precoFinalStr)
+        valPrecoCusto = Val(precoCustoStr)
+        valMargem = Val(margemStr)
         
         If valPrecoFinal <= 0 And valPrecoCusto > 0 Then
             valPrecoFinal = Round(valPrecoCusto * (1 + (valMargem / 100)), 2)
+        ElseIf valPrecoCusto > 0 And valMargem = 0 And valPrecoFinal > 0 Then
+            valMargem = Round(((valPrecoFinal / valPrecoCusto) - 1) * 100, 1)
         End If
         
         If valPrecoFinal <= 0 Then
             .TxtPreco.BorderColor = &HFF&
-            MsgBox "Informe o Preço Final de Venda!", vbExclamation, "Preço Inválido"
+            MsgBox "Informe o Preço de Custo/Margem ou Preço Final de Venda!", vbExclamation, "Preço Inválido"
             .TxtPreco.SetFocus
             Exit Sub
         End If
@@ -77,10 +80,12 @@ Public Sub SalvarProdutosServicos()
             If estMin = 0 Then estMin = 5
         End If
         
+        bSincronizandoPlanilha = True
         Dim cel As Range
         If IsEmpty(vIDProduto) Or vIDProduto = "" Or vIDProduto = 0 Then
             Set cel = wsP.Range("C:C").Find(What:=Trim(.TxtDescricao.Text), LookIn:=xlValues, LookAt:=xlWhole)
             If Not cel Is Nothing Then
+                bSincronizandoPlanilha = False
                 .TxtDescricao.BorderColor = &HFF&
                 MsgBox "Já existe um item cadastrado com esta Descrição!", vbExclamation, "Item Duplicado"
                 .TxtDescricao.SetFocus
@@ -96,27 +101,46 @@ Public Sub SalvarProdutosServicos()
             wsP.Cells(lin, "B").Value = tipoItem
             wsP.Cells(lin, "C").Value = Trim(.TxtDescricao.Text)
             wsP.Cells(lin, "D").Value = valPrecoCusto
+            wsP.Cells(lin, "D").NumberFormat = "R$ #,##0.00"
             wsP.Cells(lin, "E").Value = valMargem
-            wsP.Cells(lin, "F").Value = valPrecoFinal
+            wsP.Cells(lin, "E").NumberFormat = "0.0""%"""
+            If valPrecoCusto > 0 Then
+                wsP.Cells(lin, "F").Formula = "=ROUND(D" & lin & "*(1+(E" & lin & "/100)),2)"
+            Else
+                wsP.Cells(lin, "F").Value = valPrecoFinal
+            End If
+            wsP.Cells(lin, "F").NumberFormat = "R$ #,##0.00"
             wsP.Cells(lin, "G").Value = estAtual
             wsP.Cells(lin, "H").Value = estMin
             
+            bSincronizandoPlanilha = False
             MsgBox "Item cadastrado com sucesso!", vbInformation, "Cadastro Concluído"
         Else
             Set cel = wsP.Range("A:A").Find(What:=vIDProduto, LookIn:=xlValues, LookAt:=xlWhole)
             If cel Is Nothing Then
+                bSincronizandoPlanilha = False
                 MsgBox "Item não localizado para alteração!", vbCritical, "Erro"
                 Exit Sub
             End If
             
-            cel.Offset(0, 1).Value = tipoItem
-            cel.Offset(0, 2).Value = Trim(.TxtDescricao.Text)
-            cel.Offset(0, 3).Value = valPrecoCusto
-            cel.Offset(0, 4).Value = valMargem
-            cel.Offset(0, 5).Value = valPrecoFinal
-            cel.Offset(0, 6).Value = estAtual
-            cel.Offset(0, 7).Value = estMin
+            Dim rEd As Long
+            rEd = cel.Row
+            wsP.Cells(rEd, "B").Value = tipoItem
+            wsP.Cells(rEd, "C").Value = Trim(.TxtDescricao.Text)
+            wsP.Cells(rEd, "D").Value = valPrecoCusto
+            wsP.Cells(rEd, "D").NumberFormat = "R$ #,##0.00"
+            wsP.Cells(rEd, "E").Value = valMargem
+            wsP.Cells(rEd, "E").NumberFormat = "0.0""%"""
+            If valPrecoCusto > 0 Then
+                wsP.Cells(rEd, "F").Formula = "=ROUND(D" & rEd & "*(1+(E" & rEd & "/100)),2)"
+            Else
+                wsP.Cells(rEd, "F").Value = valPrecoFinal
+            End If
+            wsP.Cells(rEd, "F").NumberFormat = "R$ #,##0.00"
+            wsP.Cells(rEd, "G").Value = estAtual
+            wsP.Cells(rEd, "H").Value = estMin
             
+            bSincronizandoPlanilha = False
             MsgBox "Item alterado com sucesso!", vbInformation, "Atualização Concluída"
         End If
         
@@ -147,7 +171,12 @@ Public Sub ExcluirProdutoServico()
     End If
     
     If MsgBox("Deseja realmente excluir: " & cel.Offset(0, 2).Text & "?", vbQuestion + vbYesNo, "Confirmar Exclusão") = vbYes Then
+        On Error Resume Next
+        wsP.Unprotect "VendasSeguras2026"
+        On Error GoTo 0
+        bSincronizandoPlanilha = True
         cel.EntireRow.Delete
+        bSincronizandoPlanilha = False
         MsgBox "Item excluído com sucesso!", vbInformation, "Exclusão"
         Call LimparCampos
         Call BuscarProdutosServicos
@@ -207,10 +236,15 @@ Public Sub AtualizarInventario()
     Set wsP = PlanProdutosServicos()
     Set wsInv = PlanInventario()
     If wsP Is Nothing Or wsInv Is Nothing Then Exit Sub
+    
+    bSincronizandoPlanilha = True
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+    
     wsInv.Unprotect "VendasSeguras2026"
     wsP.Unprotect "VendasSeguras2026"
     
-    Dim ultP As Long, r As Long
+    Dim ultP As Long
     ultP = wsP.Cells(wsP.Rows.Count, "A").End(xlUp).Row
     
     Dim ultInv As Long
@@ -219,129 +253,198 @@ Public Sub AtualizarInventario()
         wsInv.Range("B12:M" & ultInv + 5).Clear
     End If
     
-    Dim totItensEstoque As Long, totCustoEstoque As Double, totVendaEstoque As Double
-    Dim totLucroEstoque As Double, totEstoqueBaixo As Long
-    totItensEstoque = 0
-    totCustoEstoque = 0#
-    totVendaEstoque = 0#
-    totLucroEstoque = 0#
-    totEstoqueBaixo = 0
-    
-    Dim linDest As Long
-    linDest = 12
-    
     If ultP >= 2 Then
-        For r = 2 To ultP
-            Dim idP As Long, tipoP As String, descP As String
-            Dim vCusto As Double, vMargem As Double, vVenda As Double
-            Dim qEstoque As Long, qMin As Long
-            
-            idP = Val(wsP.Cells(r, "A").Value)
-            tipoP = Trim(wsP.Cells(r, "B").Text)
-            descP = Trim(wsP.Cells(r, "C").Text)
-            
-            If idP = 0 And descP = "" Then GoTo ProximoItem
-            
-            vCusto = Val(Replace(wsP.Cells(r, "D").Value, ",", "."))
-            vMargem = Val(Replace(wsP.Cells(r, "E").Value, ",", "."))
-            vVenda = Val(Replace(wsP.Cells(r, "F").Value, ",", "."))
-            qEstoque = Val(wsP.Cells(r, "G").Value)
-            qMin = Val(wsP.Cells(r, "H").Value)
-            If qMin = 0 Then qMin = 5
-            
-            If tipoP = "" Then tipoP = "Produto"
-            
-            Dim stEstoque As String
-            If UCase(tipoP) = "SERVIÇO" Or UCase(tipoP) = "SERVICO" Then
-                stEstoque = "??? SERVIÇO"
-            Else
-                totItensEstoque = totItensEstoque + qEstoque
-                totCustoEstoque = totCustoEstoque + (qEstoque * vCusto)
-                totVendaEstoque = totVendaEstoque + (qEstoque * vVenda)
-                
-                If qEstoque <= 0 Then
-                    stEstoque = "? ZERADO"
-                    totEstoqueBaixo = totEstoqueBaixo + 1
-                ElseIf qEstoque <= qMin Then
-                    stEstoque = "?? ESTOQUE BAIXO"
-                    totEstoqueBaixo = totEstoqueBaixo + 1
-                Else
-                    stEstoque = "? NORMAL"
-                End If
-            End If
-            
-            Dim totCustoItem As Double, totVendaItem As Double, totLucroItem As Double
-            totCustoItem = qEstoque * vCusto
-            totVendaItem = qEstoque * vVenda
-            totLucroItem = totVendaItem - totCustoItem
-            
-            wsInv.Cells(linDest, "B").Value = idP
-            wsInv.Cells(linDest, "C").Value = tipoP
-            wsInv.Cells(linDest, "D").Value = descP
-            wsInv.Cells(linDest, "E").Value = vCusto
-            wsInv.Cells(linDest, "E").NumberFormat = "R$ #,##0.00"
-            wsInv.Cells(linDest, "F").Value = vMargem / 100
-            wsInv.Cells(linDest, "F").NumberFormat = "0.0%"
-            wsInv.Cells(linDest, "G").Value = vVenda
-            wsInv.Cells(linDest, "G").NumberFormat = "R$ #,##0.00"
-            
-            If UCase(tipoP) = "SERVIÇO" Or UCase(tipoP) = "SERVICO" Then
-                wsInv.Cells(linDest, "H").Value = "-"
-                wsInv.Cells(linDest, "I").Value = "-"
-                wsInv.Cells(linDest, "K").Value = "-"
-                wsInv.Cells(linDest, "L").Value = "-"
-                wsInv.Cells(linDest, "M").Value = "-"
-            Else
-                wsInv.Cells(linDest, "H").Value = qEstoque
-                wsInv.Cells(linDest, "I").Value = qMin
-                wsInv.Cells(linDest, "K").Value = totCustoItem
-                wsInv.Cells(linDest, "K").NumberFormat = "R$ #,##0.00"
-                wsInv.Cells(linDest, "L").Value = totVendaItem
-                wsInv.Cells(linDest, "L").NumberFormat = "R$ #,##0.00"
-                wsInv.Cells(linDest, "M").Value = totLucroItem
-                wsInv.Cells(linDest, "M").NumberFormat = "R$ #,##0.00"
-            End If
-            
-            wsInv.Cells(linDest, "J").Value = stEstoque
-            
-            If (linDest Mod 2) = 0 Then
-                wsInv.Range("B" & linDest & ":M" & linDest).Interior.Color = RGB(247, 249, 250)
-            Else
-                wsInv.Range("B" & linDest & ":M" & linDest).Interior.Color = RGB(255, 255, 255)
-            End If
-            
-            linDest = linDest + 1
-ProximoItem:
-        Next r
+        Dim qtdItens As Long, linFim As Long
+        qtdItens = ultP - 1
+        linFim = 11 + qtdItens
+        
+        ' Copiar dados base (ID, Tipo, Descricao, Custo, Margem) em bloco
+        wsInv.Range("B12:F" & linFim).Value = wsP.Range("A2:E" & ultP).Value
+        ' Copiar Estoque Atual e Estoque Minimo
+        wsInv.Range("H12:I" & linFim).Value = wsP.Range("G2:H" & ultP).Value
+        
+        ' Garantir formulas dinamicas em PRODUTOS_SERVICOS (Coluna F = Preco Venda)
+        wsP.Range("F2:F" & ultP).Formula = "=ROUND(D2*(1+(E2/100)),2)"
+        
+        ' Inserir FORMULAS DINAMICAS AUTOMATIVAS em INVENTARIO:
+        ' Col G (Preco Venda): aceita Margem tanto em formato 50 (50%) quanto 0.5 (50%)
+        wsInv.Range("G12:G" & linFim).Formula = "=ROUND(E12*(1+IF(ABS(F12)<=1,F12,F12/100)),2)"
+        
+        ' Col J (Status Automatico do Estoque)
+        wsInv.Range("J12:J" & linFim).Formula = "=IF(OR(UPPER(C12)=""SERVIÇO"",UPPER(C12)=""SERVICO""),""SERVIÇO"",IF(H12<=0,""ZERADO"",IF(H12<=I12,""ESTOQUE BAIXO"",""NORMAL"")))"
+        
+        ' Col K (Custo Total = Estoque * Custo Unit)
+        wsInv.Range("K12:K" & linFim).Formula = "=IF(OR(UPPER(C12)=""SERVIÇO"",UPPER(C12)=""SERVICO""),0,N(H12)*N(E12))"
+        
+        ' Col L (Venda Total = Estoque * Preco Venda)
+        wsInv.Range("L12:L" & linFim).Formula = "=IF(OR(UPPER(C12)=""SERVIÇO"",UPPER(C12)=""SERVICO""),0,N(H12)*N(G12))"
+        
+        ' Col M (Lucro Projetado = Venda Total - Custo Total)
+        wsInv.Range("M12:M" & linFim).Formula = "=IF(OR(UPPER(C12)=""SERVIÇO"",UPPER(C12)=""SERVICO""),0,L12-K12)"
+        
+        ' Formatacoes numericas elegantes
+        wsInv.Range("E12:E" & linFim).NumberFormat = "R$ #,##0.00"
+        wsInv.Range("F12:F" & linFim).NumberFormat = "0.0""%"""
+        wsInv.Range("G12:G" & linFim).NumberFormat = "R$ #,##0.00"
+        wsInv.Range("K12:M" & linFim).NumberFormat = "R$ #,##0.00"
+        wsInv.Range("B12:C" & linFim).HorizontalAlignment = xlCenter
+        wsInv.Range("H12:J" & linFim).HorizontalAlignment = xlCenter
+        wsInv.Range("B12:M" & linFim).Font.Name = "Segoe UI"
+        wsInv.Range("B12:M" & linFim).Font.Size = 9.5
+        
+        ' Cards de KPIs no Topo (Linha 6) com FORMULAS DINAMICAS EM TEMPO REAL
+        wsInv.Range("B6").Formula = "=SUM(H12:H" & linFim & ")"
+        wsInv.Range("B6").NumberFormat = "#,##0"" un."""
+        
+        wsInv.Range("D6").Formula = "=SUM(K12:K" & linFim & ")"
+        wsInv.Range("D6").NumberFormat = "R$ #,##0.00"
+        
+        wsInv.Range("F6").Formula = "=SUM(L12:L" & linFim & ")"
+        wsInv.Range("F6").NumberFormat = "R$ #,##0.00"
+        
+        wsInv.Range("H6").Formula = "=SUM(M12:M" & linFim & ")"
+        wsInv.Range("H6").NumberFormat = "R$ #,##0.00"
+        
+        wsInv.Range("J6").Formula = "=COUNTIF(J12:J" & linFim & ",""ZERADO"")+COUNTIF(J12:J" & linFim & ",""ESTOQUE BAIXO"")"
+        wsInv.Range("J6").NumberFormat = "#,##0"" alertas"""
     End If
     
-    totLucroEstoque = totVendaEstoque - totCustoEstoque
+    Application.Calculation = xlCalculationAutomatic
+    Application.ScreenUpdating = True
+    bSincronizandoPlanilha = False
     
-    wsInv.Range("B6").Value = totItensEstoque & " un."
-    wsInv.Range("D6").Value = totCustoEstoque
-    wsInv.Range("D6").NumberFormat = "R$ #,##0.00"
-    wsInv.Range("F6").Value = totVendaEstoque
-    wsInv.Range("F6").NumberFormat = "R$ #,##0.00"
-    wsInv.Range("H6").Value = totLucroEstoque
-    wsInv.Range("H6").NumberFormat = "R$ #,##0.00"
-    wsInv.Range("J6").Value = totEstoqueBaixo & " alertas"
     Call AplicarProtecaoInventario
-    
     On Error GoTo 0
 End Sub
 
-Public Sub SalvarProdutos()
-    Call SalvarProdutosServicos
-End Sub
+Public Sub ProcessarEdicaoPlanilha(ByVal Sh As Object, ByVal Target As Range)
+    On Error GoTo FimEdicao
+    If bSincronizandoPlanilha Then Exit Sub
+    If Target Is Nothing Then Exit Sub
+    
+    Dim nomeAba As String
+    nomeAba = UCase(Trim(Sh.Name))
+    If nomeAba <> "INVENTARIO" And nomeAba <> "PRODUTOS_SERVICOS" Then Exit Sub
+    
+    ' Se for RECEPCAO, bloquear qualquer edicao manual
+    If UCase(Trim(ModSeguranca.vPerfilAtivo)) = "RECEPCAO" Then
+        Call AplicarProtecaoInventario
+        Exit Sub
+    End If
+    
+    bSincronizandoPlanilha = True
+    Dim wsP As Worksheet, wsInv As Worksheet
+    Set wsP = PlanProdutosServicos()
+    Set wsInv = PlanInventario()
+    wsP.Unprotect "VendasSeguras2026"
+    wsInv.Unprotect "VendasSeguras2026"
+    
+    Dim cel As Range
+    For Each cel In Target.Cells
+        Dim r As Long, col As Long
+        r = cel.Row
+        col = cel.Column
+        
+        If nomeAba = "INVENTARIO" And r >= 12 Then
+            Dim idInv As Long
+            idInv = Val(wsInv.Cells(r, "B").Value)
+            If idInv > 0 Then
+                Dim vCusto As Double, vMargem As Double, vVenda As Double
+                vCusto = Val(Replace(wsInv.Cells(r, "E").Value, ",", "."))
+                
+                ' Se o usuario digitou diretamente um novo PRECO DE VENDA (Coluna G = 7)
+                If col = 7 Then
+                    vVenda = Val(Replace(wsInv.Cells(r, "G").Value, ",", "."))
+                    If vCusto > 0 And vVenda > 0 Then
+                        vMargem = Round(((vVenda / vCusto) - 1) * 100, 1)
+                        wsInv.Cells(r, "F").Value = vMargem
+                        wsInv.Cells(r, "F").NumberFormat = "0.0""%"""
+                    End If
+                    wsInv.Cells(r, "G").Formula = "=ROUND(E" & r & "*(1+IF(ABS(F" & r & ")<=1,F" & r & ",F" & r & "/100)),2)"
+                ElseIf col = 5 Or col = 6 Then
+                    ' Alterou Custo (E=5) ou Margem (F=6) -> garantir formula em G
+                    If col = 6 Then
+                        Dim mRaw As Double
+                        mRaw = Val(Replace(wsInv.Cells(r, "F").Value, ",", "."))
+                        If Abs(mRaw) > 0 And Abs(mRaw) <= 1 Then
+                            wsInv.Cells(r, "F").Value = Round(mRaw * 100, 1)
+                        End If
+                        wsInv.Cells(r, "F").NumberFormat = "0.0""%"""
+                    End If
+                    wsInv.Cells(r, "G").Formula = "=ROUND(E" & r & "*(1+IF(ABS(F" & r & ")<=1,F" & r & ",F" & r & "/100)),2)"
+                End If
+                
+                ' Sincronizar linha editada em INVENTARIO de volta para PRODUTOS_SERVICOS
+                Dim celP As Range
+                Set celP = wsP.Range("A:A").Find(What:=idInv, LookIn:=xlValues, LookAt:=xlWhole)
+                If Not celP Is Nothing Then
+                    Dim rP As Long
+                    rP = celP.Row
+                    wsP.Cells(rP, "B").Value = wsInv.Cells(r, "C").Value
+                    wsP.Cells(rP, "C").Value = wsInv.Cells(r, "D").Value
+                    wsP.Cells(rP, "D").Value = Val(Replace(wsInv.Cells(r, "E").Value, ",", "."))
+                    Dim mSync As Double
+                    mSync = Val(Replace(wsInv.Cells(r, "F").Value, ",", "."))
+                    If Abs(mSync) > 0 And Abs(mSync) <= 1 Then mSync = Round(mSync * 100, 1)
+                    wsP.Cells(rP, "E").Value = mSync
+                    wsP.Cells(rP, "F").Formula = "=ROUND(D" & rP & "*(1+(E" & rP & "/100)),2)"
+                    wsP.Cells(rP, "G").Value = Val(wsInv.Cells(r, "H").Value)
+                    wsP.Cells(rP, "H").Value = Val(wsInv.Cells(r, "I").Value)
+                End If
+            End If
+            
+        ElseIf nomeAba = "PRODUTOS_SERVICOS" And r >= 2 Then
+            Dim idP As Long
+            idP = Val(wsP.Cells(r, "A").Value)
+            If idP > 0 Then
+                Dim cP As Double, mP As Double, vP As Double
+                cP = Val(Replace(wsP.Cells(r, "D").Value, ",", "."))
+                
+                ' Se o usuario digitou diretamente o PRECO DE VENDA (Coluna F = 6)
+                If col = 6 Then
+                    vP = Val(Replace(wsP.Cells(r, "F").Value, ",", "."))
+                    If cP > 0 And vP > 0 Then
+                        mP = Round(((vP / cP) - 1) * 100, 1)
+                        wsP.Cells(r, "E").Value = mP
+                        wsP.Cells(r, "E").NumberFormat = "0.0""%"""
+                    End If
+                    wsP.Cells(r, "F").Formula = "=ROUND(D" & r & "*(1+(E" & r & "/100)),2)"
+                ElseIf col = 4 Or col = 5 Then
+                    ' Alterou Custo (D=4) ou Margem (E=5) -> garantir formula em F
+                    If col = 5 Then
+                        Dim mPRaw As Double
+                        mPRaw = Val(Replace(wsP.Cells(r, "E").Value, ",", "."))
+                        If Abs(mPRaw) > 0 And Abs(mPRaw) <= 1 Then
+                            wsP.Cells(r, "E").Value = Round(mPRaw * 100, 1)
+                        End If
+                        wsP.Cells(r, "E").NumberFormat = "0.0""%"""
+                    End If
+                    wsP.Cells(r, "F").Formula = "=ROUND(D" & r & "*(1+(E" & r & "/100)),2)"
+                End If
+                
+                ' Sincronizar com a linha correspondente em INVENTARIO
+                Dim celInv As Range
+                Set celInv = wsInv.Range("B:B").Find(What:=idP, LookIn:=xlValues, LookAt:=xlWhole)
+                If Not celInv Is Nothing Then
+                    Dim rI As Long
+                    rI = celInv.Row
+                    wsInv.Cells(rI, "C").Value = wsP.Cells(r, "B").Value
+                    wsInv.Cells(rI, "D").Value = wsP.Cells(r, "C").Value
+                    wsInv.Cells(rI, "E").Value = Val(Replace(wsP.Cells(r, "D").Value, ",", "."))
+                    wsInv.Cells(rI, "F").Value = Val(Replace(wsP.Cells(r, "E").Value, ",", "."))
+                    wsInv.Cells(rI, "F").NumberFormat = "0.0""%"""
+                    wsInv.Cells(rI, "G").Formula = "=ROUND(E" & rI & "*(1+IF(ABS(F" & rI & ")<=1,F" & rI & ",F" & rI & "/100)),2)"
+                    wsInv.Cells(rI, "H").Value = Val(wsP.Cells(r, "G").Value)
+                    wsInv.Cells(rI, "I").Value = Val(wsP.Cells(r, "H").Value)
+                End If
+            End If
+        End If
+    Next cel
 
-Public Sub BuscarProdutos()
-    Call BuscarProdutosServicos
+FimEdicao:
+    bSincronizandoPlanilha = False
+    Call AplicarProtecaoInventario
 End Sub
-
-Public Sub ExcluirProduto()
-    Call ExcluirProdutoServico
-End Sub
-
 
 Public Sub NovoItemInventario()
     If UCase(Trim(ModSeguranca.vPerfilAtivo)) = "RECEPCAO" Then
@@ -362,10 +465,10 @@ Public Sub AplicarProtecaoInventario()
     
     If Not wsInv Is Nothing Then
         wsInv.Unprotect "VendasSeguras2026"
+        ' Bloqueia celulas apenas quando o perfil ativo for RECEPCAO!
+        ' Quando for ADMIN, deixa desbloqueado para edicao dinamica direta na planilha!
         If UCase(Trim(ModSeguranca.vPerfilAtivo)) = "RECEPCAO" Then
             wsInv.Protect Password:="VendasSeguras2026", UserInterfaceOnly:=True, DrawingObjects:=True, Contents:=True, Scenarios:=True
-        Else
-            wsInv.Protect Password:="VendasSeguras2026", UserInterfaceOnly:=True, DrawingObjects:=False, Contents:=True, Scenarios:=True
         End If
     End If
     
@@ -378,5 +481,16 @@ Public Sub AplicarProtecaoInventario()
     On Error GoTo 0
 End Sub
 
+Public Sub SalvarProdutos()
+    Call SalvarProdutosServicos
+End Sub
+
+Public Sub BuscarProdutos()
+    Call BuscarProdutosServicos
+End Sub
+
+Public Sub ExcluirProduto()
+    Call ExcluirProdutoServico
+End Sub
 
 

@@ -15,43 +15,55 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
 
+Private bCalculandoPreco As Boolean
+
 Private Sub ConfigurarLayoutPadrao()
     On Error Resume Next
     Me.Width = 476
     Me.Height = 462
     
-    Label1.Left = 16: Label1.Top = 8: Label1.Width = 436: Label1.Height = 26
+    Label1.Left = 16: Label1.Top = 6: Label1.Width = 436: Label1.Height = 24
     Label1.Caption = "PRODUTOS, SERVIÇOS & ESTOQUE"
+    Label1.ForeColor = 16744576: Label1.BackStyle = 0
     
-    LblTipo.Left = 16: LblTipo.Top = 40: LblTipo.Width = 90: LblTipo.Height = 12: LblTipo.Caption = "Tipo:"
-    CboTipo.Left = 16: CboTipo.Top = 52: CboTipo.Width = 95: CboTipo.Height = 20
+    LblTipo.Left = 16: LblTipo.Top = 36: LblTipo.Width = 95: LblTipo.Height = 14
+    LblTipo.Caption = "Tipo do Item:": LblTipo.ForeColor = 0: LblTipo.BackStyle = 0: LblTipo.Font.Bold = True: LblTipo.Visible = True
+    CboTipo.Left = 16: CboTipo.Top = 50: CboTipo.Width = 95: CboTipo.Height = 20
     
-    Label2.Left = 120: Label2.Top = 40: Label2.Width = 220: Label2.Height = 12: Label2.Caption = "Descrição do Produto / Serviço:"
-    TxtDescricao.Left = 120: TxtDescricao.Top = 52: TxtDescricao.Width = 332: TxtDescricao.Height = 20
+    Label2.Left = 120: Label2.Top = 36: Label2.Width = 250: Label2.Height = 14
+    Label2.Caption = "Descrição do Produto / Serviço:": Label2.ForeColor = 0: Label2.BackStyle = 0: Label2.Font.Bold = True: Label2.Visible = True
+    TxtDescricao.Left = 120: TxtDescricao.Top = 50: TxtDescricao.Width = 332: TxtDescricao.Height = 20
     
-    LblPrecoCusto.Left = 16: LblPrecoCusto.Top = 78: LblPrecoCusto.Width = 95: LblPrecoCusto.Height = 12: LblPrecoCusto.Caption = "Preço Custo (R$):"
+    LblPrecoCusto.Left = 16: LblPrecoCusto.Top = 76: LblPrecoCusto.Width = 95: LblPrecoCusto.Height = 14
+    LblPrecoCusto.Caption = "Preço Custo (R$):": LblPrecoCusto.ForeColor = 0: LblPrecoCusto.BackStyle = 0: LblPrecoCusto.Font.Bold = True: LblPrecoCusto.Visible = True
     TxtPrecoCusto.Left = 16: TxtPrecoCusto.Top = 90: TxtPrecoCusto.Width = 95: TxtPrecoCusto.Height = 20
     
-    LblMargem.Left = 120: LblMargem.Top = 78: LblMargem.Width = 95: LblMargem.Height = 12: LblMargem.Caption = "Margem Lucro (%):"
+    LblMargem.Left = 120: LblMargem.Top = 76: LblMargem.Width = 100: LblMargem.Height = 14
+    LblMargem.Caption = "Margem Lucro (%):": LblMargem.ForeColor = 0: LblMargem.BackStyle = 0: LblMargem.Font.Bold = True: LblMargem.Visible = True
     TxtMargem.Left = 120: TxtMargem.Top = 90: TxtMargem.Width = 95: TxtMargem.Height = 20
     
-    Label3.Left = 224: Label3.Top = 78: Label3.Width = 100: Label3.Height = 12: Label3.Caption = "Preço Venda (R$):"
+    Label3.Left = 224: Label3.Top = 76: Label3.Width = 105: Label3.Height = 14
+    Label3.Caption = "Preço Venda (R$):": Label3.ForeColor = 0: Label3.BackStyle = 0: Label3.Font.Bold = True: Label3.Visible = True
     TxtPreco.Left = 224: TxtPreco.Top = 90: TxtPreco.Width = 100: TxtPreco.Height = 20
     
     BtSalvar.Left = 336: BtSalvar.Top = 86: BtSalvar.Width = 116: BtSalvar.Height = 26
     
-    LblEstoque.Left = 16: LblEstoque.Top = 116: LblEstoque.Width = 95: LblEstoque.Height = 12: LblEstoque.Caption = "Estoque Atual:"
+    LblEstoque.Left = 16: LblEstoque.Top = 114: LblEstoque.Width = 95: LblEstoque.Height = 14
+    LblEstoque.Caption = "Estoque Atual:": LblEstoque.ForeColor = 0: LblEstoque.BackStyle = 0: LblEstoque.Font.Bold = True: LblEstoque.Visible = True
     TxtEstoque.Left = 16: TxtEstoque.Top = 128: TxtEstoque.Width = 95: TxtEstoque.Height = 20
     
-    LblEstoqueMin.Left = 120: LblEstoqueMin.Top = 116: LblEstoqueMin.Width = 95: LblEstoqueMin.Height = 12: LblEstoqueMin.Caption = "Estoque Mínimo:"
+    LblEstoqueMin.Left = 120: LblEstoqueMin.Top = 114: LblEstoqueMin.Width = 100: LblEstoqueMin.Height = 14
+    LblEstoqueMin.Caption = "Estoque Mínimo:": LblEstoqueMin.ForeColor = 0: LblEstoqueMin.BackStyle = 0: LblEstoqueMin.Font.Bold = True: LblEstoqueMin.Visible = True
     TxtEstoqueMin.Left = 120: TxtEstoqueMin.Top = 128: TxtEstoqueMin.Width = 95: TxtEstoqueMin.Height = 20
     
     TxtPesquisa.Left = 16: TxtPesquisa.Top = 158: TxtPesquisa.Width = 404: TxtPesquisa.Height = 20
     LblPesquisa.Left = 22: LblPesquisa.Top = 161: LblPesquisa.Width = 240: LblPesquisa.Height = 14
+    LblPesquisa.ForeColor = &H80000010: LblPesquisa.BackStyle = 0
     CommandButton2.Left = 424: CommandButton2.Top = 158: CommandButton2.Width = 28: CommandButton2.Height = 20
     
     Label6.Left = 16: Label6.Top = 184: Label6.Width = 436: Label6.Height = 2
-    Label4.Left = 18: Label4.Top = 188: Label4.Width = 434: Label4.Height = 12
+    Label4.Left = 18: Label4.Top = 188: Label4.Width = 434: Label4.Height = 14
+    Label4.ForeColor = 0: Label4.BackStyle = 0: Label4.Font.Bold = True
     Label4.Caption = "Cód   Tipo         Descrição do Item                                 Custo       Margem   Preço Venda   Est."
     Label5.Visible = False
     
@@ -162,15 +174,46 @@ End Sub
 
 Private Sub CalcularPrecoFinalAutomatico()
     On Error Resume Next
+    If bCalculandoPreco Then Exit Sub
     If UCase(Trim(ModSeguranca.vPerfilAtivo)) = "RECEPCAO" Then Exit Sub
     Dim c As Double, m As Double, pf As Double
     c = Val(Replace(Replace(TxtPrecoCusto.Text, "R$", ""), ",", "."))
     m = Val(Replace(Replace(TxtMargem.Text, "%", ""), ",", "."))
     If c > 0 Then
+        bCalculandoPreco = True
         pf = Round(c * (1 + (m / 100)), 2)
         TxtPreco.Text = Format(pf, "0.00")
+        bCalculandoPreco = False
     End If
     On Error GoTo 0
+End Sub
+
+Private Sub CalcularMargemReversaAutomatica()
+    On Error Resume Next
+    If bCalculandoPreco Then Exit Sub
+    If UCase(Trim(ModSeguranca.vPerfilAtivo)) = "RECEPCAO" Then Exit Sub
+    Dim c As Double, pf As Double, m As Double
+    c = Val(Replace(Replace(TxtPrecoCusto.Text, "R$", ""), ",", "."))
+    pf = Val(Replace(Replace(TxtPreco.Text, "R$", ""), ",", "."))
+    If c > 0 And pf > 0 Then
+        bCalculandoPreco = True
+        m = Round(((pf / c) - 1) * 100, 1)
+        TxtMargem.Text = Format(m, "0.0")
+        bCalculandoPreco = False
+    End If
+    On Error GoTo 0
+End Sub
+
+Private Sub TxtPrecoCusto_Change()
+    Call CalcularPrecoFinalAutomatico
+End Sub
+
+Private Sub TxtMargem_Change()
+    Call CalcularPrecoFinalAutomatico
+End Sub
+
+Private Sub TxtPreco_Change()
+    Call CalcularMargemReversaAutomatica
 End Sub
 
 Private Sub TxtPrecoCusto_AfterUpdate()
@@ -182,16 +225,7 @@ Private Sub TxtMargem_AfterUpdate()
 End Sub
 
 Private Sub TxtPreco_AfterUpdate()
-    On Error Resume Next
-    If UCase(Trim(ModSeguranca.vPerfilAtivo)) = "RECEPCAO" Then Exit Sub
-    Dim c As Double, pf As Double, m As Double
-    c = Val(Replace(Replace(TxtPrecoCusto.Text, "R$", ""), ",", "."))
-    pf = Val(Replace(Replace(TxtPreco.Text, "R$", ""), ",", "."))
-    If c > 0 And pf > 0 Then
-        m = Round(((pf / c) - 1) * 100, 1)
-        TxtMargem.Text = Format(m, "0.0")
-    End If
-    On Error GoTo 0
+    Call CalcularMargemReversaAutomatica
 End Sub
 
 Private Sub BtSalvar_Click()
@@ -213,6 +247,7 @@ End Sub
 Private Sub LstDados_Click()
     If LstDados.ListIndex = -1 Then Exit Sub
     
+    bCalculandoPreco = True
     ModProdutosServicos.vIDProduto = LstDados.List(LstDados.ListIndex, 0)
     CboTipo.Text = LstDados.List(LstDados.ListIndex, 1)
     TxtDescricao.Text = LstDados.List(LstDados.ListIndex, 2)
@@ -220,6 +255,7 @@ Private Sub LstDados_Click()
     TxtMargem.Text = Trim(Replace(LstDados.List(LstDados.ListIndex, 4), "%", ""))
     TxtPreco.Text = Trim(Replace(LstDados.List(LstDados.ListIndex, 5), "R$", ""))
     TxtEstoque.Text = LstDados.List(LstDados.ListIndex, 6)
+    bCalculandoPreco = False
     
     On Error Resume Next
     Dim wsP As Worksheet

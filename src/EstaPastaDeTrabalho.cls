@@ -32,3 +32,10 @@ Private Sub Workbook_BeforeClose(Cancel As Boolean)
     On Error GoTo 0
 End Sub
 
+
+Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal Target As Range)
+    On Error Resume Next
+    Call ModProdutosServicos.ProcessarEdicaoPlanilha(Sh, Target)
+    On Error GoTo 0
+End Sub
+
