@@ -32,20 +32,39 @@ Private Sub BtExcluir_Click()
     Call ModClientes.ExcluirCliente
 End Sub
 
+Private Sub TxtDataNasc_AfterUpdate()
+    If Trim(TxtDataNasc.Text) <> "" Then
+        If IsDate(TxtDataNasc.Text) Then
+            Dim idCalc As Long
+            idCalc = ModClientes.CalcularIdade(TxtDataNasc.Text)
+            TxtIdade.Text = idCalc & " anos"
+        End If
+    End If
+End Sub
+
 Private Sub LstDados_Click()
     If LstDados.ListIndex = -1 Then Exit Sub
     
-    ' Guarda o ID do cliente selecionado
     ModClientes.vIDCliente = LstDados.List(LstDados.ListIndex, 0)
-    
-    ' Preenche os campos
     TxtNome.Text = LstDados.List(LstDados.ListIndex, 1)
     TxtCPF.Text = LstDados.List(LstDados.ListIndex, 2)
     TxtTelefone.Text = LstDados.List(LstDados.ListIndex, 3)
-    TxtEmail.Text = LstDados.List(LstDados.ListIndex, 4)
-    TxtEndereco.Text = LstDados.List(LstDados.ListIndex, 5)
     
-    ' Altera botão para Alterar e habilita Excluir
+    On Error Resume Next
+    TxtBairro.Text = LstDados.List(LstDados.ListIndex, 4)
+    TxtIdade.Text = LstDados.List(LstDados.ListIndex, 5)
+    TxtEndereco.Text = LstDados.List(LstDados.ListIndex, 6)
+    
+    Dim wsC As Worksheet
+    Set wsC = ThisWorkbook.Sheets("CLIENTES")
+    Dim cel As Range
+    Set cel = wsC.Range("A:A").Find(What:=ModClientes.vIDCliente, LookIn:=xlValues, LookAt:=xlWhole)
+    If Not cel Is Nothing Then
+        TxtEmail.Text = cel.Offset(0, 4).Text
+        TxtDataNasc.Text = cel.Offset(0, 7).Text
+    End If
+    On Error GoTo 0
+    
     BtSalvar.Caption = "ALTERAR"
     On Error Resume Next
     BtExcluir.Enabled = True

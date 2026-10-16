@@ -3,7 +3,7 @@ Option Explicit
 Option Compare Text
 
 ' =============================================================
-' MOTOR DE DASHBOARD INTERATIVO, KPIS & GRÁFICOS (AULAS 22 A 27)
+' MOTOR DE DASHBOARD INTERATIVO, KPIS & GRÁFICOS (AULAS 22 A 27 - FASE 8)
 ' =============================================================
 
 Public gFiltroPeriodo As String ' "GERAL", "HOJE", "ESTE_MES", "MES_ANTERIOR"
@@ -26,7 +26,15 @@ Private Function PlanUsuarios() As Worksheet
     Set PlanUsuarios = ThisWorkbook.Sheets("USUARIOS")
 End Function
 
-' === CONTROLADORES INTERATIVOS DE FILTRO (AULAS 26 & 27) ===
+Public Function RemoverAcentos(ByVal texto As String) As String
+    Dim comAcento As String, semAcento As String, i As Long
+    comAcento = "ÁÀÃÂÄÉÈÊËÍÌÎÏÓÒÕÔÖÚÙÛÜÇÑáàãâäéèêëíìîïóòõôöúùûüçñ"
+    semAcento = "AAAAAEEEEIIIIOOOOOUUUUCNaaaaaeeeeiiiiooooouuuucn"
+    For i = 1 To Len(comAcento)
+        texto = Replace(texto, Mid(comAcento, i, 1), Mid(semAcento, i, 1))
+    Next i
+    RemoverAcentos = texto
+End Function
 
 Public Sub FiltrarDashboardGeral()
     gFiltroPeriodo = "GERAL"
@@ -51,16 +59,13 @@ Public Sub FiltrarDashboardMesAnterior()
 End Sub
 
 Public Sub FiltrarDashboardOperador()
-    Dim op As String
-    op = InputBox("FILTRAR DASHBOARD POR OPERADOR:" & vbCrLf & vbCrLf & _
-                  "• Digite 'TODOS' para ver todas as vendas" & vbCrLf & _
-                  "• Ou informe o nome/login do operador (ex: Vitoria, Geovana, Admin):", _
-                  "Filtro Interativo de Operador", IIf(Trim(gFiltroOperador) = "" Or gFiltroOperador = "TODOS", "TODOS", gFiltroOperador))
-    If Trim(op) = "" Or UCase(Trim(op)) = "TODOS" Then
-        gFiltroOperador = "TODOS"
-    Else
-        gFiltroOperador = Trim(op)
-    End If
+    On Error Resume Next
+    FormFiltroOperador.Show
+    On Error GoTo 0
+End Sub
+
+Public Sub DefinirFiltroOperador(ByVal nomeOp As String)
+    gFiltroOperador = nomeOp
     Call AtualizarDashboard
 End Sub
 
@@ -89,9 +94,6 @@ Public Sub AtualizarDashboard()
     ultV = wsV.Cells(wsV.Rows.Count, "A").End(xlUp).Row
     ultI = wsI.Cells(wsI.Rows.Count, "A").End(xlUp).Row
     
-    ' ---------------------------------------------------------
-    ' 1. CÁLCULO DOS KPIS COM FILTROS INTERATIVOS (AULAS 22, 23, 26)
-    ' ---------------------------------------------------------
     Dim totVendasConcluidas As Long
     Dim totFaturamentoLiq As Double
     Dim totValorReceber As Double
@@ -129,9 +131,7 @@ Public Sub AtualizarDashboard()
             idV = Val(wsV.Cells(r, "A").Value)
             st = UCase(Trim(wsV.Cells(r, "I").Text))
             
-            ' Verifica status da venda
             If st = "CONCLUÍDA" Or st = "CONCLUIDA" Or InStr(st, "CONCLU") > 0 Then
-                ' 1. Filtro por Período
                 Dim passaPeriodo As Boolean
                 passaPeriodo = True
                 
@@ -149,15 +149,17 @@ Public Sub AtualizarDashboard()
                     End Select
                 End If
                 
-                ' 2. Filtro por Operador
+                ' Filtro por Operador inteligente (Sem acento, Case-Insensitive)
                 Dim passaOperador As Boolean
                 passaOperador = True
                 opV = Trim(wsV.Cells(r, "M").Text)
                 If UCase(Trim(gFiltroOperador)) <> "TODOS" And Trim(gFiltroOperador) <> "" Then
-                    If InStr(1, opV, gFiltroOperador, vbTextCompare) = 0 Then passaOperador = False
+                    Dim opVLimpo As String, filtroOpLimpo As String
+                    opVLimpo = LCase(RemoverAcentos(opV))
+                    filtroOpLimpo = LCase(RemoverAcentos(Trim(gFiltroOperador)))
+                    If InStr(1, opVLimpo, filtroOpLimpo) = 0 Then passaOperador = False
                 End If
                 
-                ' 3. Filtro por Forma de Pagamento
                 Dim passaForma As Boolean
                 passaForma = True
                 fp = Trim(wsV.Cells(r, "H").Text)
@@ -175,7 +177,6 @@ Public Sub AtualizarDashboard()
                     totValorReceber = totValorReceber + vRec
                     vendasConcluidasIDs(idV) = True
                     
-                    ' Agrupamento por Forma de Pagamento
                     If InStr(1, fp, "crédito", vbTextCompare) > 0 Or InStr(1, fp, "credito", vbTextCompare) > 0 Then
                         faturasPorForma("Cartão de Crédito") = faturasPorForma("Cartão de Crédito") + vLiq
                     ElseIf InStr(1, fp, "débito", vbTextCompare) > 0 Or InStr(1, fp, "debito", vbTextCompare) > 0 Then
@@ -199,7 +200,6 @@ Public Sub AtualizarDashboard()
         Next r
     End If
     
-    ' Contagem de Itens e Agrupamento de Produtos e Serviços (Aula 25)
     Dim produtosTotais As Object, produtosQtd As Object
     Set produtosTotais = CreateObject("Scripting.Dictionary")
     Set produtosQtd = CreateObject("Scripting.Dictionary")
@@ -231,9 +231,7 @@ Public Sub AtualizarDashboard()
         ticketMedio = 0
     End If
     
-    ' ---------------------------------------------------------
-    ' 2. BANNER DE STATUS DO FILTRO ATIVO (AULA 26)
-    ' ---------------------------------------------------------
+    ' Banner de Filtro Ativo
     Dim descFiltro As String
     Select Case UCase(Trim(gFiltroPeriodo))
         Case "HOJE": descFiltro = "Hoje (" & Format(Date, "dd/mm/yyyy") & ")"
@@ -244,9 +242,7 @@ Public Sub AtualizarDashboard()
     
     wsIni.Range("B10").Value = "?? FILTRO ATIVO: Período: [ " & descFiltro & " ]  |  Operador: [ " & gFiltroOperador & " ]  |  Pedidos no Filtro: [ " & totVendasConcluidas & " pedidos ]"
     
-    ' ---------------------------------------------------------
-    ' 3. ATUALIZAÇÃO DOS 4 CARDS DE KPIS
-    ' ---------------------------------------------------------
+    ' Cards de KPIs
     wsIni.Range("B12").Value = totFaturamentoLiq
     wsIni.Range("B12").NumberFormat = "R$ #,##0.00"
     
@@ -258,9 +254,7 @@ Public Sub AtualizarDashboard()
     wsIni.Range("I12").Value = totValorReceber
     wsIni.Range("I12").NumberFormat = "R$ #,##0.00"
     
-    ' ---------------------------------------------------------
-    ' 4. RANKING TOP 5 CLIENTES (AULA 24)
-    ' ---------------------------------------------------------
+    ' TOP 5 Clientes
     Dim k As Long
     For k = 17 To 21
         wsIni.Range("B" & k).Value = (k - 16) & "º"
@@ -311,9 +305,7 @@ Public Sub AtualizarDashboard()
         Next a
     End If
     
-    ' ---------------------------------------------------------
-    ' 5. RANKING TOP 5 PRODUTOS E SERVIÇOS MAIS VENDIDOS (AULAS 25 & 27)
-    ' ---------------------------------------------------------
+    ' TOP 5 Produtos e Serviços
     wsIni.Range("G15").Value = "?? TOP 5 PRODUTOS & SERVIÇOS MAIS VENDIDOS"
     wsIni.Range("H16").Value = "Produto / Serviço"
     
@@ -323,8 +315,6 @@ Public Sub AtualizarDashboard()
         wsIni.Range("I" & k).Value = 0
         wsIni.Range("J" & k).Value = 0
         wsIni.Range("J" & k).NumberFormat = "R$ #,##0.00"
-        
-        ' Células auxiliares para alimentar o gráfico
         wsIni.Range("L" & k).Value = "-"
         wsIni.Range("M" & k).Value = 0
     Next k
@@ -366,16 +356,12 @@ Public Sub AtualizarDashboard()
             wsIni.Range("I" & linDestProd).Value = qtdProdArr(a)
             wsIni.Range("J" & linDestProd).Value = valProdArr(a)
             wsIni.Range("J" & linDestProd).NumberFormat = "R$ #,##0.00"
-            
-            ' Auxiliar gráfico
             wsIni.Range("L" & linDestProd).Value = prodArr(a)
             wsIni.Range("M" & linDestProd).Value = valProdArr(a)
         Next a
     End If
     
-    ' ---------------------------------------------------------
-    ' 6. FORMAS DE PAGAMENTO (LINHAS 24 A 28)
-    ' ---------------------------------------------------------
+    ' Formas de Pagamento
     Dim fpLista As Variant
     fpLista = Array("Dinheiro", "PIX", "Cartão de Crédito", "Cartão de Débito", "Boleto Bancário")
     
@@ -397,15 +383,12 @@ Public Sub AtualizarDashboard()
         wsIni.Range("C" & cRow).NumberFormat = "R$ #,##0.00"
     Next linFP
     
-    ' Rodapé com data/hora e status
-    wsIni.Range("B30").Value = "Última atualização: " & Format(Now, "dd/mm/yyyy hh:nn:ss") & " | ?? Segurança Ativa: Aba USUARIOS protegida contra visualização"
+    wsIni.Range("B30").Value = "Última atualização: " & Format(Now, "dd/mm/yyyy hh:nn:ss") & " | ?? Segurança Ativa: Acessos protegidos"
     
-    ' Atualiza gráficos interativos
     Call AtualizarGraficosInterativos
     Exit Sub
     
 TrataErro:
-    ' Falha tratada silenciosamente
 End Sub
 
 Public Sub AtualizarGraficosInterativos()
@@ -422,7 +405,6 @@ Public Sub AtualizarGraficosInterativos()
         If chObj.Name = "GraficoTopProdutos" Then Set chTopProd = chObj
     Next chObj
     
-    ' 1. Gráfico de Rosca: Formas de Pagamento
     If chFormas Is Nothing Then
         Set chFormas = wsIni.ChartObjects.Add(wsIni.Range("B33").Left, wsIni.Range("B33").Top, wsIni.Range("B33:E33").Width, 230)
         chFormas.Name = "GraficoFormasPgto"
@@ -437,7 +419,6 @@ Public Sub AtualizarGraficosInterativos()
         chFormas.Chart.SetSourceData wsIni.Range("B24:C28")
     End If
     
-    ' 2. Gráfico de Barras: TOP 5 Produtos e Serviços
     If chTopProd Is Nothing Then
         Set chTopProd = wsIni.ChartObjects.Add(wsIni.Range("G33").Left, wsIni.Range("G33").Top, wsIni.Range("G33:K33").Width, 230)
         chTopProd.Name = "GraficoTopProdutos"

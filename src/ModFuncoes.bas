@@ -1,6 +1,20 @@
 Attribute VB_Name = "ModFuncoes"
 Option Explicit
 
+Public Sub AbrirInventario()
+    On Error Resume Next
+    ThisWorkbook.Sheets("INVENTARIO").Activate
+    Call ModProdutosServicos.AtualizarInventario
+    On Error GoTo 0
+End Sub
+
+Public Sub IrParaInicio()
+    On Error Resume Next
+    ThisWorkbook.Sheets("INÍCIO").Activate
+    On Error GoTo 0
+End Sub
+
+
 Public Sub AbrirProdutosServicos()
     FormProdutos.Show
 End Sub
@@ -72,10 +86,10 @@ TrataErro:
 End Function
 
 Public Function AcSQL(Valor As String) As String
-    Dim N As Long, t As String, v As Long
+    Dim n As Long, t As String, v As Long
     t = ""
-    For N = 1 To VBA.Len(Valor)
-        v = VBA.Asc(VBA.Mid(Valor, N, 1))
+    For n = 1 To VBA.Len(Valor)
+        v = VBA.Asc(VBA.Mid(Valor, n, 1))
         Select Case v
             Case 39: t = t & "''"
             Case 65: t = t & "[AÁÀÂÃÄ]"
@@ -97,7 +111,7 @@ Public Function AcSQL(Valor As String) As String
                     t = t & "_"
                 End If
         End Select
-    Next N
+    Next n
     AcSQL = t
 End Function
 

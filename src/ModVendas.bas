@@ -4,6 +4,29 @@ Option Compare Text
 
 Public vItemIndexEmEdicao As Long
 
+Public Sub BaixarEstoqueItemVenda(ByVal descProduto As String, ByVal qtdVendida As Long)
+    On Error Resume Next
+    Dim wsP As Worksheet
+    Set wsP = ModProdutosServicos.PlanProdutosServicos()
+    If wsP Is Nothing Then Exit Sub
+    
+    Dim cel As Range
+    Set cel = wsP.Range("C:C").Find(What:=Trim(descProduto), LookIn:=xlValues, LookAt:=xlWhole)
+    If Not cel Is Nothing Then
+        Dim tipoP As String
+        tipoP = UCase(Trim(cel.Offset(0, -1).Text))
+        If tipoP <> "SERVIÇO" And tipoP <> "SERVICO" Then
+            Dim estAtual As Long
+            estAtual = Val(cel.Offset(0, 4).Value)
+            estAtual = estAtual - qtdVendida
+            If estAtual < 0 Then estAtual = 0
+            cel.Offset(0, 4).Value = estAtual
+        End If
+    End If
+    On Error GoTo 0
+End Sub
+
+
 Private Function PlanVendas() As Worksheet
     Set PlanVendas = ThisWorkbook.Sheets("VENDAS")
 End Function
@@ -573,6 +596,7 @@ Sub FinalizarVenda()
             
             PlanItensVenda.Cells(linItem, "E").NumberFormat = "R$ #,##0.00"
             PlanItensVenda.Cells(linItem, "G").NumberFormat = "R$ #,##0.00"
+            Call BaixarEstoqueItemVenda(descProd, CLng(qtdItem))
         Next i
         
         ' Pergunta de Emissão de Comprovante em PDF
@@ -587,5 +611,6 @@ Sub FinalizarVenda()
         Call IniciarNovaVenda
     End With
 End Sub
+
 
 

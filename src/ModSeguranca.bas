@@ -3,7 +3,7 @@ Option Explicit
 Option Compare Text
 
 ' =============================================================
-' MÓDULO DE SEGURANÇA, CONTROLE DE ACESSO E OPERADORES (FASE 5, 6 & 7)
+' MÓDULO DE SEGURANÇA, CONTROLE DE ACESSO E OPERADORES (FASE 8)
 ' =============================================================
 Public vUsuarioAtivo As String
 Public vNomeOperador As String
@@ -17,8 +17,6 @@ Public Function PlanUsuarios() As Worksheet
 End Function
 
 Public Sub ProtegerAbaUsuarios()
-    ' Oculta a aba USUARIOS de forma blindada (xlSheetVeryHidden = 2)
-    ' Impede visualização ou desocultação pelo menu normal do Excel
     On Error Resume Next
     Dim wsU As Worksheet
     Set wsU = PlanUsuarios()
@@ -45,7 +43,6 @@ Public Sub AbrirLogin(Optional ByVal bTrocaUsuario As Boolean = False)
 End Sub
 
 Public Sub TrocarOperador()
-    ' Garante ocultação imediata da aba de usuários antes e após a troca
     Call ProtegerAbaUsuarios
     Call AbrirLogin(True)
     Call ProtegerAbaUsuarios
@@ -66,13 +63,18 @@ Public Function AutenticarUsuario(ByVal loginOuNome As String, ByVal pinSenha As
         Exit Function
     End If
     
+    Dim rInicio As Long
+    Dim celID As Range
+    Set celID = wsU.Range("A:A").Find(What:="ID", LookIn:=xlValues, LookAt:=xlWhole)
+    If Not celID Is Nothing Then rInicio = celID.Row + 1 Else rInicio = 5
+    
     Dim ultLin As Long, r As Long
     ultLin = wsU.Cells(wsU.Rows.Count, "A").End(xlUp).Row
     
     Dim achou As Boolean
     achou = False
     
-    For r = 2 To ultLin
+    For r = rInicio To ultLin
         Dim strNome As String, strUser As String, strPass As String, strPerfil As String, strAtivo As String
         Dim idU As Long
         idU = Val(wsU.Cells(r, "A").Value)
@@ -97,11 +99,9 @@ Public Function AutenticarUsuario(ByVal loginOuNome As String, ByVal pinSenha As
     
     If achou Then
         AutenticarUsuario = True
-        ' Garante que a aba USUARIOS seja VeryHidden imediatamente após qualquer login
         Call ProtegerAbaUsuarios
         Call AtualizarBadgesFormsAbertos
         
-        ' Se operador logado for RECEPCAO, garante que ele esteja no INÍCIO
         If UCase(Trim(vPerfilAtivo)) = "RECEPCAO" Then
             On Error Resume Next
             ThisWorkbook.Sheets("INÍCIO").Activate
@@ -139,9 +139,14 @@ Public Function VerificarAutorizacaoAdmin(ByVal operacaoDescricao As String, Opt
         Exit Function
     End If
     
+    Dim rInicio As Long
+    Dim celID As Range
+    Set celID = wsU.Range("A:A").Find(What:="ID", LookIn:=xlValues, LookAt:=xlWhole)
+    If Not celID Is Nothing Then rInicio = celID.Row + 1 Else rInicio = 5
+    
     Dim ultLin As Long, r As Long
     ultLin = wsU.Cells(wsU.Rows.Count, "A").End(xlUp).Row
-    For r = 2 To ultLin
+    For r = rInicio To ultLin
         If UCase(Trim(wsU.Cells(r, "E").Text)) = "ADMIN" And UCase(Trim(wsU.Cells(r, "F").Text)) = "SIM" Then
             If Trim(wsU.Cells(r, "D").Text) = Trim(pinInformado) Then
                 VerificarAutorizacaoAdmin = True
@@ -159,7 +164,6 @@ Public Sub AtualizarBadgesFormsAbertos()
     Dim textoBadge As String
     textoBadge = "?? Operador: " & vNomeOperador & " (" & IIf(vPerfilAtivo = "ADMIN", "Admin", "Recepção") & ")"
     
-    ' Atualiza FormVendas se aberto
     FormVendas.LblOperadorBadge.Caption = textoBadge
     If vPerfilAtivo = "ADMIN" Then
         FormVendas.LblOperadorBadge.ForeColor = &H800000
@@ -167,7 +171,6 @@ Public Sub AtualizarBadgesFormsAbertos()
         FormVendas.LblOperadorBadge.ForeColor = &H7A3B00
     End If
     
-    ' Atualiza FormRelatorios se aberto
     FormRelatorios.LblOperadorBadge.Caption = textoBadge
     Call ConfigurarPermissoesRelatorios
     On Error GoTo 0
@@ -199,7 +202,6 @@ Public Sub ConfigurarPermissoesRelatorios()
 End Sub
 
 Public Sub AbrirGerenciamentoUsuarios()
-    ' Só abre a planilha de usuários se o Administrador confirmar a senha
     If VerificarAutorizacaoAdmin("Gerenciamento e Acesso à Base de Usuários") Then
         Dim wsU As Worksheet
         Set wsU = PlanUsuarios()
@@ -208,7 +210,7 @@ Public Sub AbrirGerenciamentoUsuarios()
             wsU.Activate
             MsgBox "Aba USUARIOS desocultada com sucesso!" & vbCrLf & vbCrLf & _
                    "• Para alterar senhas ou nomes, edite diretamente as células." & vbCrLf & _
-                   "• Ao trocar de operador ou sair desta aba, ela se OCULTARÁ AUTOMATICAMENTE de forma blindada.", vbInformation, "Gerenciamento de Acessos"
+                   "• Ao trocar de operador ou sair desta aba, ela se OCULTARÁ AUTOMATICAMENTE.", vbInformation, "Gerenciamento de Acessos"
         End If
     End If
 End Sub
@@ -220,4 +222,5 @@ Public Sub FecharEProtegerUsuarios()
     On Error GoTo 0
     MsgBox "Planilha de Usuários blindada e ocultada com sucesso!", vbInformation, "Segurança Ativa"
 End Sub
+
 

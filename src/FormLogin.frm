@@ -29,10 +29,10 @@ Private Sub UserForm_Initialize()
         ultLin = wsU.Cells(wsU.Rows.Count, "A").End(xlUp).Row
         For r = 2 To ultLin
             If UCase(Trim(wsU.Cells(r, "F").Text)) = "SIM" Then
-                Dim N As String, p As String
-                N = Trim(wsU.Cells(r, "B").Text)
+                Dim n As String, p As String
+                n = Trim(wsU.Cells(r, "B").Text)
                 p = Trim(wsU.Cells(r, "E").Text)
-                CboOperador.AddItem N & " (" & p & ")"
+                CboOperador.AddItem n & " (" & p & ")"
             End If
         Next r
     End If
