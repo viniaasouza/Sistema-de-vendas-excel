@@ -63,7 +63,11 @@ Inspirado e expandido a partir das aulas de Excel VBA do professor **Edivam Cabr
   - Emissão com 1 clique de comprovantes A4 com dados da empresa, cliente, itens detalhados e forma de pagamento.
 
 ### 🔐 6. Multi-Usuário, Controle de Acesso e Blindagem (`FormLogin` & `ModSeguranca`)
+- **Login Obrigatório na Abertura (`Workbook_Open`):** Ao abrir a planilha, a tela de identificação do operador é a primeira janela exibida, bloqueando fechamento ou uso sem autenticação prévia por PIN.
 - **Perfis de Usuário com PIN Rápido:** `ADMIN` (acesso irrestrito) e `RECEPCAO` (operações de caixa e comprovantes).
+- **Visibilidade de Planilhas por Perfil (`xlSheetVeryHidden`):**
+  - **Recepção (`RECEPCAO`):** Apenas a aba `INÍCIO` fica visível na barra de guias do Excel. Todas as planilhas de dados (`VENDAS`, `CONFIG`, `CLIENTES`, `INVENTARIO`, `PRODUTOS_SERVICOS`, `ITENS_VENDA`, `R_Vendas` e `USUARIOS`) ficam em modo **`xlSheetVeryHidden` (2)** — impossíveis de visualizar ou reexibir pelo menu de contexto do Excel. Os formulários do PDV e Clientes continuam operando normalmente via código.
+  - **Administrador (`ADMIN`):** Ao realizar login com o PIN de Administrador, todas as planilhas (`VENDAS`, `CONFIG`, `CLIENTES`, `INVENTARIO`, `PRODUTOS_SERVICOS`, `ITENS_VENDA`) são automaticamente desbloqueadas e disponibilizadas para visualização e edição direta.
 - **Auditoria de Operador em Vendas:** Registro automático da colaboradora ativa na coluna `M` da aba `VENDAS` e badge visual com botão de **Troca Rápida de Operador**.
 - **Layout Desobstruído da Aba `USUARIOS`:**
   - Cabeçalho reposicionado para a linha 4 e dados a partir da linha 5.

@@ -1,7 +1,29 @@
 Attribute VB_Name = "ModFuncoes"
 Option Explicit
 
+Public Function InspecionarRuntimeFormProdutos() As String
+    Load FormProdutos
+    Dim c As Object
+    Dim s As String
+    For Each c In FormProdutos.Controls
+        If TypeName(c) = "Label" Then
+            s = s & c.Name & ": Cap=[" & c.Caption & "] L=" & c.Left & " T=" & c.Top & " W=" & c.Width & " H=" & c.Height & " FC=" & c.ForeColor & " BS=" & c.BackStyle & " Vis=" & c.Visible & vbCrLf
+        End If
+    Next c
+    Unload FormProdutos
+    InspecionarRuntimeFormProdutos = s
+End Function
+
+
 Public Sub AbrirInventario()
+    If UCase(Trim(ModSeguranca.vPerfilAtivo)) <> "ADMIN" Then
+        MsgBox "Acesso Restrito: A visualização da planilha de Inventário é permitida exclusivamente para o Administrador." & vbCrLf & vbCrLf & _
+               "Solicite autorização com PIN para visualizar.", vbExclamation, "Visualização Restrita"
+        If Not ModSeguranca.VerificarAutorizacaoAdmin("Visualizar Planilha de Inventário") Then
+            Exit Sub
+        End If
+        ThisWorkbook.Sheets("INVENTARIO").Visible = -1
+    End If
     On Error Resume Next
     ThisWorkbook.Sheets("INVENTARIO").Activate
     Call ModProdutosServicos.AtualizarInventario
@@ -11,6 +33,9 @@ End Sub
 Public Sub IrParaInicio()
     On Error Resume Next
     ThisWorkbook.Sheets("INÍCIO").Activate
+    If UCase(Trim(ModSeguranca.vPerfilAtivo)) <> "ADMIN" Then
+        Call ModSeguranca.AplicarVisibilidadeAbasPorPerfil
+    End If
     On Error GoTo 0
 End Sub
 
@@ -114,5 +139,6 @@ Public Function AcSQL(Valor As String) As String
     Next n
     AcSQL = t
 End Function
+
 
 

@@ -45,7 +45,7 @@ End Sub
 Public Sub TrocarOperador()
     Call ProtegerAbaUsuarios
     Call AbrirLogin(True)
-    Call ProtegerAbaUsuarios
+    Call AplicarVisibilidadeAbasPorPerfil
 End Sub
 
 Public Function AutenticarUsuario(ByVal loginOuNome As String, ByVal pinSenha As String) As Boolean
@@ -59,7 +59,7 @@ Public Function AutenticarUsuario(ByVal loginOuNome As String, ByVal pinSenha As
         vIDUsuarioAtivo = 1
         AutenticarUsuario = True
         Call ProtegerAbaUsuarios
-        Call ModProdutosServicos.AplicarProtecaoInventario
+        Call AplicarVisibilidadeAbasPorPerfil
         Call AtualizarBadgesFormsAbertos
         Exit Function
     End If
@@ -101,7 +101,7 @@ Public Function AutenticarUsuario(ByVal loginOuNome As String, ByVal pinSenha As
     If achou Then
         AutenticarUsuario = True
         Call ProtegerAbaUsuarios
-        Call ModProdutosServicos.AplicarProtecaoInventario
+        Call AplicarVisibilidadeAbasPorPerfil
         Call AtualizarBadgesFormsAbertos
         
         If UCase(Trim(vPerfilAtivo)) = "RECEPCAO" Then
@@ -225,5 +225,42 @@ Public Sub FecharEProtegerUsuarios()
     MsgBox "Planilha de Usuários blindada e ocultada com sucesso!", vbInformation, "Segurança Ativa"
 End Sub
 
+
+
+
+Public Sub AplicarVisibilidadeAbasPorPerfil()
+    On Error Resume Next
+    Dim isAdmin As Boolean
+    isAdmin = (UCase(Trim(vPerfilAtivo)) = "ADMIN")
+    
+    ' INÍCIO permanece sempre visível como painel principal
+    ThisWorkbook.Sheets("INÍCIO").Visible = -1 ' xlSheetVisible
+    ThisWorkbook.Sheets("INÍCIO").Activate
+    
+    ' Planilhas restritas exclusivamente para o Administrador
+    Dim abasRestritas As Variant
+    abasRestritas = Array("VENDAS", "CONFIG", "CLIENTES", "INVENTARIO", "PRODUTOS_SERVICOS", "ITENS_VENDA", "R_Vendas")
+    
+    Dim i As Long, nomeAba As String, ws As Worksheet
+    For i = LBound(abasRestritas) To UBound(abasRestritas)
+        nomeAba = CStr(abasRestritas(i))
+        Set ws = Nothing
+        Set ws = ThisWorkbook.Sheets(nomeAba)
+        If Not ws Is Nothing Then
+            If isAdmin Then
+                ws.Visible = -1 ' xlSheetVisible (Admin pode visualizar)
+            Else
+                ws.Visible = 2  ' xlSheetVeryHidden (Totalmente invisivel para Recepcao)
+            End If
+        End If
+    Next i
+    
+    ' USUARIOS sempre permanece VeryHidden por padrão para todos
+    Call ProtegerAbaUsuarios
+    
+    ' Proteção de células do inventário
+    Call ModProdutosServicos.AplicarProtecaoInventario
+    On Error GoTo 0
+End Sub
 
 

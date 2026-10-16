@@ -11,19 +11,18 @@ Option Explicit
 
 Private Sub Workbook_Open()
     On Error Resume Next
-    Call ModSeguranca.ProtegerAbaUsuarios
-    ThisWorkbook.Sheets("INÍCIO").Activate
-    ActiveWindow.DisplayGridlines = False
-    Call ModDashboard.AtualizarDashboard
-    
-    ' Exigir autenticacao obrigatoria ao abrir a planilha
+    ' Inicia com perfil restrito e oculta todas as planilhas restritas
     ModSeguranca.vUsuarioAtivo = ""
     ModSeguranca.vNomeOperador = ""
     ModSeguranca.vPerfilAtivo = "RECEPCAO"
     ModSeguranca.vIDUsuarioAtivo = 0
-    Call ModProdutosServicos.AplicarProtecaoInventario
+    Call ModSeguranca.AplicarVisibilidadeAbasPorPerfil
     
-    ' Exibir tela de Login imediatamente ao abrir
+    ThisWorkbook.Sheets("INÍCIO").Activate
+    ActiveWindow.DisplayGridlines = False
+    Call ModDashboard.AtualizarDashboard
+    
+    ' Exibe tela de Login imediatamente
     FormLogin.bModoTroca = True
     FormLogin.Show
     On Error GoTo 0
@@ -31,6 +30,11 @@ End Sub
 
 Private Sub Workbook_SheetActivate(ByVal Sh As Object)
     On Error Resume Next
+    If UCase(Trim(ModSeguranca.vPerfilAtivo)) <> "ADMIN" Then
+        If Sh.Name <> "INÍCIO" Then
+            Call ModSeguranca.AplicarVisibilidadeAbasPorPerfil
+        End If
+    End If
     If Sh.Name <> "USUARIOS" Then
         Call ModSeguranca.ProtegerAbaUsuarios
     End If
@@ -39,6 +43,9 @@ End Sub
 
 Private Sub Workbook_BeforeClose(Cancel As Boolean)
     On Error Resume Next
+    ' Ao fechar, garante que todas as abas restritas fiquem VeryHidden
+    ModSeguranca.vPerfilAtivo = "RECEPCAO"
+    Call ModSeguranca.AplicarVisibilidadeAbasPorPerfil
     Call ModSeguranca.ProtegerAbaUsuarios
     On Error GoTo 0
 End Sub
