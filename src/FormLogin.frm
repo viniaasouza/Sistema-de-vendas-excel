@@ -16,9 +16,22 @@ Attribute VB_Exposed = False
 Option Explicit
 
 Public bModoTroca As Boolean
+Private bFechamentoAutorizado As Boolean
 
 Private Sub UserForm_Initialize()
-    Me.Caption = "Identificação do Operador - PDV"
+    bFechamentoAutorizado = False
+    
+    If Trim(ModSeguranca.vUsuarioAtivo) = "" Then
+        Me.Caption = "Acesso ao Sistema - Identificação do Operador"
+        BtEntrar.Caption = "ENTRAR NO SISTEMA"
+    ElseIf bModoTroca Then
+        Me.Caption = "Trocar Operador Ativo"
+        BtEntrar.Caption = "TROCAR OPERADOR"
+    Else
+        Me.Caption = "Identificação do Operador - PDV"
+        BtEntrar.Caption = "ENTRAR (PDV)"
+    End If
+    
     On Error Resume Next
     LblInfo.Caption = "Acesso Individual Protegido por PIN:" & vbCrLf & _
                       "• Recepção: Vitória ou Geovana" & vbCrLf & _
@@ -60,6 +73,12 @@ Private Sub UserForm_Initialize()
     LblMensagem.Caption = ""
 End Sub
 
+Private Sub UserForm_Activate()
+    On Error Resume Next
+    TxtSenha.SetFocus
+    On Error GoTo 0
+End Sub
+
 Private Sub CboOperador_Change()
     TxtSenha.Text = ""
     LblMensagem.Caption = ""
@@ -89,15 +108,27 @@ Private Sub BtEntrar_Click()
         nomeOp = Trim(txtOp)
     End If
     
+    Dim eraLoginInicial As Boolean
+    eraLoginInicial = (Trim(ModSeguranca.vUsuarioAtivo) = "")
+    
     Dim autenticado As Boolean
     autenticado = ModSeguranca.AutenticarUsuario(nomeOp, Trim(TxtSenha.Text))
     
     If autenticado Then
         LblMensagem.Caption = ""
+        bFechamentoAutorizado = True
+        
+        On Error Resume Next
+        ThisWorkbook.Sheets("INÍCIO").Range("B5").Value = "  SISTEMA ONLINE  |  OPERADOR ATIVO: " & UCase(ModSeguranca.vNomeOperador) & " (" & ModSeguranca.vPerfilAtivo & ")"
+        On Error GoTo 0
+        
         Unload Me
         
         If Not bModoTroca Then
             FormVendas.Show
+        ElseIf eraLoginInicial Then
+            MsgBox "Bem-vindo(a), " & ModSeguranca.vNomeOperador & "!" & vbCrLf & vbCrLf & _
+                   "• Perfil de Acesso: " & ModSeguranca.vPerfilAtivo, vbInformation, "Acesso Autorizado"
         Else
             MsgBox "Operador alterado com sucesso!" & vbCrLf & vbCrLf & _
                    "• Operador Ativo: " & ModSeguranca.vNomeOperador & vbCrLf & _
@@ -118,7 +149,29 @@ Private Sub TxtSenha_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift
 End Sub
 
 Private Sub BtSair_Click()
+    If Trim(ModSeguranca.vUsuarioAtivo) = "" Then
+        If MsgBox("O login é obrigatório para utilizar a planilha." & vbCrLf & vbCrLf & _
+                  "Deseja fechar a planilha agora?", vbQuestion + vbYesNo, "Login Obrigatório") = vbYes Then
+            bFechamentoAutorizado = True
+            Unload Me
+            ThisWorkbook.Close SaveChanges:=False
+        End If
+        Exit Sub
+    End If
+    bFechamentoAutorizado = True
     Unload Me
+End Sub
+
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+    If CloseMode = vbFormControlMenu And Not bFechamentoAutorizado Then
+        If Trim(ModSeguranca.vUsuarioAtivo) = "" Then
+            Cancel = True
+            LblMensagem.Caption = "Informe seu PIN para entrar ou clique em FECHAR!"
+            On Error Resume Next
+            TxtSenha.SetFocus
+            On Error GoTo 0
+        End If
+    End If
 End Sub
 
 
