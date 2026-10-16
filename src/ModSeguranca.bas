@@ -124,9 +124,7 @@ Public Function VerificarAutorizacaoAdmin(ByVal operacaoDescricao As String, Opt
     If senhaDireta <> "" Then
         pinInformado = senhaDireta
     Else
-        pinInformado = InputBox("Esta operação exige autorização de Administrador!" & vbCrLf & vbCrLf & _
-                                "• Ação: " & operacaoDescricao & vbCrLf & vbCrLf & _
-                                "Digite o PIN de 4 dígitos do Administrador:", "Autorização Administrativa")
+        pinInformado = SolicitarPINAdmin(operacaoDescricao)
     End If
     
     If Trim(pinInformado) = "" Then
@@ -262,5 +260,22 @@ Public Sub AplicarVisibilidadeAbasPorPerfil()
     Call ModProdutosServicos.AplicarProtecaoInventario
     On Error GoTo 0
 End Sub
+
+Public Function SolicitarPINAdmin(ByVal operacaoDescricao As String) As String
+    Load FormPIN
+    FormPIN.LblOperacao.Caption = "Ação: " & operacaoDescricao
+    FormPIN.TxtPIN.PasswordChar = "*"
+    FormPIN.TxtPIN.Text = ""
+    FormPIN.bConfirmado = False
+    FormPIN.sPINDigitado = ""
+    FormPIN.Show
+    
+    If FormPIN.bConfirmado Then
+        SolicitarPINAdmin = Trim(FormPIN.sPINDigitado)
+    Else
+        SolicitarPINAdmin = ""
+    End If
+    Unload FormPIN
+End Function
 
 
