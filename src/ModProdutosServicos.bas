@@ -207,6 +207,8 @@ Public Sub AtualizarInventario()
     Set wsP = PlanProdutosServicos()
     Set wsInv = PlanInventario()
     If wsP Is Nothing Or wsInv Is Nothing Then Exit Sub
+    wsInv.Unprotect "VendasSeguras2026"
+    wsP.Unprotect "VendasSeguras2026"
     
     Dim ultP As Long, r As Long
     ultP = wsP.Cells(wsP.Rows.Count, "A").End(xlUp).Row
@@ -323,6 +325,7 @@ ProximoItem:
     wsInv.Range("H6").Value = totLucroEstoque
     wsInv.Range("H6").NumberFormat = "R$ #,##0.00"
     wsInv.Range("J6").Value = totEstoqueBaixo & " alertas"
+    Call AplicarProtecaoInventario
     
     On Error GoTo 0
 End Sub
@@ -338,4 +341,42 @@ End Sub
 Public Sub ExcluirProduto()
     Call ExcluirProdutoServico
 End Sub
+
+
+Public Sub NovoItemInventario()
+    If UCase(Trim(ModSeguranca.vPerfilAtivo)) = "RECEPCAO" Then
+        MsgBox "Acesso Restrito: Recepcionistas possuem permissão apenas para consulta do inventário." & vbCrLf & vbCrLf & _
+               "Qualquer alteração de estoque, custo ou cadastro exige autorização de Administrador.", vbExclamation, "Restrição de Inventário"
+        If Not ModSeguranca.VerificarAutorizacaoAdmin("Alterar ou Cadastrar Item no Inventário") Then
+            Exit Sub
+        End If
+    End If
+    FormProdutos.Show
+End Sub
+
+Public Sub AplicarProtecaoInventario()
+    On Error Resume Next
+    Dim wsInv As Worksheet, wsProd As Worksheet
+    Set wsInv = PlanInventario()
+    Set wsProd = PlanProdutosServicos()
+    
+    If Not wsInv Is Nothing Then
+        wsInv.Unprotect "VendasSeguras2026"
+        If UCase(Trim(ModSeguranca.vPerfilAtivo)) = "RECEPCAO" Then
+            wsInv.Protect Password:="VendasSeguras2026", UserInterfaceOnly:=True, DrawingObjects:=True, Contents:=True, Scenarios:=True
+        Else
+            wsInv.Protect Password:="VendasSeguras2026", UserInterfaceOnly:=True, DrawingObjects:=False, Contents:=True, Scenarios:=True
+        End If
+    End If
+    
+    If Not wsProd Is Nothing Then
+        wsProd.Unprotect "VendasSeguras2026"
+        If UCase(Trim(ModSeguranca.vPerfilAtivo)) = "RECEPCAO" Then
+            wsProd.Protect Password:="VendasSeguras2026", UserInterfaceOnly:=True, DrawingObjects:=True, Contents:=True, Scenarios:=True
+        End If
+    End If
+    On Error GoTo 0
+End Sub
+
+
 

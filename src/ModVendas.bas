@@ -20,7 +20,9 @@ Public Sub BaixarEstoqueItemVenda(ByVal descProduto As String, ByVal qtdVendida 
             estAtual = Val(cel.Offset(0, 4).Value)
             estAtual = estAtual - qtdVendida
             If estAtual < 0 Then estAtual = 0
+            wsP.Unprotect "VendasSeguras2026"
             cel.Offset(0, 4).Value = estAtual
+            Call ModProdutosServicos.AplicarProtecaoInventario
         End If
     End If
     On Error GoTo 0
@@ -611,6 +613,7 @@ Sub FinalizarVenda()
         Call IniciarNovaVenda
     End With
 End Sub
+
 
 
 

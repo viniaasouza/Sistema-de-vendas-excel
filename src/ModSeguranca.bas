@@ -59,6 +59,7 @@ Public Function AutenticarUsuario(ByVal loginOuNome As String, ByVal pinSenha As
         vIDUsuarioAtivo = 1
         AutenticarUsuario = True
         Call ProtegerAbaUsuarios
+        Call ModProdutosServicos.AplicarProtecaoInventario
         Call AtualizarBadgesFormsAbertos
         Exit Function
     End If
@@ -100,6 +101,7 @@ Public Function AutenticarUsuario(ByVal loginOuNome As String, ByVal pinSenha As
     If achou Then
         AutenticarUsuario = True
         Call ProtegerAbaUsuarios
+        Call ModProdutosServicos.AplicarProtecaoInventario
         Call AtualizarBadgesFormsAbertos
         
         If UCase(Trim(vPerfilAtivo)) = "RECEPCAO" Then
@@ -222,5 +224,6 @@ Public Sub FecharEProtegerUsuarios()
     On Error GoTo 0
     MsgBox "Planilha de Usuários blindada e ocultada com sucesso!", vbInformation, "Segurança Ativa"
 End Sub
+
 
 

@@ -140,8 +140,8 @@ Public Sub LimparCampos()
         .BtSalvar.Caption = "SALVAR"
         On Error Resume Next
         .BtExcluir.Enabled = False
-        On Error GoTo 0
         .TxtNome.SetFocus
+        On Error GoTo 0
     End With
 End Sub
 

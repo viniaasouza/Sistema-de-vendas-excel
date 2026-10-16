@@ -9,6 +9,7 @@ Inspirado e expandido a partir das aulas de Excel VBA do professor **Edivam Cabr
 ## 🚀 Funcionalidades do Sistema
 
 ### 📦 1. Gestão de Produtos, Serviços & Formação de Preço (`FormProdutos` & `ModProdutosServicos`)
+- **Layout Profissional Ampliado (`476 × 462 pt`):** Campos distribuídos em linhas dedicadas (Tipo e Descrição; Preço Custo, Margem % e Preço Venda; Estoque Atual e Estoque Mínimo; Pesquisa e ListBox com 7 colunas perfeitamente dimensionadas).
 - **Cadastro Completo:** Código ID automático, Tipo (Produto ou Serviço), descrição detalhada, Preço de Custo, Margem de Lucro Desejada (%), Preço Final de Venda, Estoque Atual e Estoque Mínimo.
 - **Formação Inteligente de Preço (Custo + Margem):**
   - Cálculo automático do Preço Final de Venda ao preencher Custo e Margem desejada (%): `Preço Final = Custo × (1 + Margem/100)`.
@@ -16,10 +17,11 @@ Inspirado e expandido a partir das aulas de Excel VBA do professor **Edivam Cabr
 - **Inteligência de Estoque por Tipo:** Para itens do tipo "Serviço", os campos de estoque são automaticamente desativados e preenchidos com "N/A".
 - **Prevenção de Duplicidade:** Validação inteligente que impede cadastramento de produtos ou serviços com a mesma descrição.
 - **Consulta em Tempo Real:** Campo de busca dinâmico com filtro incremental ao digitar (`LIKE %texto%`) e suporte a acentuação.
-- **Proteção de Catálogo:** Perfis de Recepção operam em modo consulta com preços bloqueados para edição (`Locked = True`), exigindo PIN de Administrador para alterações.
+- **Restrição Total para Recepcionistas:** Perfis de Recepção operam exclusivamente em modo leitura (`Locked = True` em todos os campos de produto e estoque, botões de edição desabilitados e proteção por PIN de Administrador).
 
 ### 📋 2. Painel Executivo de Inventário & Estoque (`INVENTARIO`)
-- **Nova Planilha Dedicada de Inventário:** Acessível diretamente pelo botão `📦 PAINEL DE INVENTÁRIO & ESTOQUE` na tela de `INÍCIO`.
+- **Acesso Rápido na Barra Superior:** Botão `📦 INVENTÁRIO` posicionado na barra de navegação superior da aba `INÍCIO` (`Top=128`), sem qualquer sobreposição com a tabela ou gráficos de Top 5.
+- **Blindagem contra Edição por Recepcionistas:** Planilha protegida contra edição manual de células (`ProtectContents = True`, `UserInterfaceOnly = True`) e botão de gerenciamento protegido por validação de perfil/PIN de Administrador.
 - **5 Cards de KPIs em Tempo Real:**
   - 📦 **Total de Itens em Estoque:** Volume físico consolidado de mercadorias.
   - 💵 **Custo Total do Estoque:** Capital total imobilizado a preço de aquisição.
@@ -29,11 +31,11 @@ Inspirado e expandido a partir das aulas de Excel VBA do professor **Edivam Cabr
 - **Tabela Gerencial Completa:** Relatório detalhado com ID, Tipo, Descrição, Custo, Margem, Preço de Venda, Estoque Atual, Mínimo, Status visual (`✅ NORMAL`, `⚠️ ESTOQUE BAIXO`, `❌ ZERADO`, `🛠️ SERVIÇO`), Custo Total, Venda Total e Lucro Projetado por item.
 - **Baixa Automática no PDV:** O fechamento de qualquer venda de itens do tipo "Produto" no caixa (`ModVendas.GravarVenda`) abate automaticamente a quantidade vendida do estoque em tempo real.
 
-### 👥 3. Cadastro e Gestão de Clientes com Bairro e Idade (`FormClientes` & `ModClientes`)
-- **Ficha Cadastral Expandida:** ID automático, Nome Completo, CPF/CNPJ, Telefone/WhatsApp, E-mail, Bairro, Data de Nascimento, Idade e Endereço Completo.
-- **Cálculo Automático de Idade:** Preenchimento da Data de Nascimento calcula instantaneamente a idade em anos através da função `CalcularIdade`.
-- **Prevenção de Duplicidade de CPF/CNPJ:** Verificação automática que bloqueia cadastro duplicado do mesmo documento.
-- **Busca Incremental e SQL:** Filtragem instantânea por nome ou documento diretamente no `ListBox`.
+### 👥 3. Cadastro e Gestão de Clientes com Bairro e Idade em Tempo Real (`FormClientes` & `ModClientes`)
+- **Ficha Cadastral Expandida e Organizada:** ID automático, Nome Completo, CPF/CNPJ, Telefone/WhatsApp, E-mail, Bairro, Endereço Completo, Data de Nascimento e Idade em linhas independentes e sem sobreposição.
+- **Cálculo Automático de Idade ao Digitar (`TxtDataNasc_Change`):** Ao digitar a Data de Nascimento, aplica máscara automática (`DD/MM/AAAA`) e calcula instantaneamente a idade em anos em tempo real, sem necessidade de sair do campo.
+- **Prevenção de Duplicidade de Nome/CPF:** Verificação automática que bloqueia cadastro duplicado.
+- **Busca Incremental:** Filtragem instantânea por nome, CPF/CNPJ ou bairro diretamente no `ListBox`.
 
 ### 🛒 4. Ponto de Venda - PDV / Frente de Caixa (`FormVendas` & `ModVendas`)
 - **Seleção Dinâmica de Clientes e Produtos/Serviços:**
