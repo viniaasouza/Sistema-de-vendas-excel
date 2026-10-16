@@ -38,7 +38,7 @@ Private Function PlanItensVenda() As Worksheet
 End Function
 
 Private Function PlanProdutos() As Worksheet
-    Set PlanProdutos = ThisWorkbook.Sheets("PRODUTOS")
+    Set PlanProdutos = ModProdutosServicos.PlanProdutosServicos()
 End Function
 
 Private Function PlanClientes() As Worksheet
@@ -107,7 +107,9 @@ Sub IniciarNovaVenda()
         .TxtTaxaRS.Text = "R$ 0,00 (0,00%)"
         
         .bBloqueiaEventos = False
+        On Error Resume Next
         .CboCliente.SetFocus
+        On Error GoTo 0
     End With
 End Sub
 
@@ -195,13 +197,14 @@ Sub FiltrarProdutos(ByVal textoBusca As String)
         busca = UCase(Trim(textoBusca))
         
         For r = 2 To ultLin
-            Dim idProd As String, descProd As String, precoProd As Double
-            idProd = PlanProdutos.Cells(r, "A").Text
-            descProd = PlanProdutos.Cells(r, "B").Text
-            precoProd = PlanProdutos.Cells(r, "C").Value
+            Dim idProd As String, descProd As String
+            idProd = Trim(PlanProdutos.Cells(r, "A").Text)
+            descProd = Trim(PlanProdutos.Cells(r, "C").Text)
             
-            If busca = "" Or InStr(1, UCase(descProd), busca) > 0 Then
-                .AddItem descProd & " (" & idProd & ")"
+            If idProd <> "" And descProd <> "" Then
+                If busca = "" Or InStr(1, UCase(descProd), busca) > 0 Then
+                    .AddItem descProd & " (" & idProd & ")"
+                End If
             End If
         Next r
     End With
@@ -241,11 +244,13 @@ Sub ProdutoSelecionado()
             idProd = Mid(strProd, p1 + 1, p2 - p1 - 1)
             Set linProd = PlanProdutos.Range("A:A").Find(What:=idProd, LookIn:=xlValues, LookAt:=xlWhole)
         Else
-            Set linProd = PlanProdutos.Range("B:B").Find(What:=Trim(strProd), LookIn:=xlValues, LookAt:=xlWhole)
+            Set linProd = PlanProdutos.Range("C:C").Find(What:=Trim(strProd), LookIn:=xlValues, LookAt:=xlWhole)
         End If
         
         If Not linProd Is Nothing Then
-            .TxtPrecoUnit.Text = Format(linProd.Offset(0, 2).Value, "#,##0.00")
+            Dim vPrecoVenda As Double
+            vPrecoVenda = Val(Replace(PlanProdutos.Cells(linProd.Row, "F").Value, ",", "."))
+            .TxtPrecoUnit.Text = Format(vPrecoVenda, "#,##0.00")
             If Val(.TxtQtd.Text) <= 0 Then .TxtQtd.Text = "1"
             Call AtualizarSubtotalItem
         End If
@@ -321,9 +326,9 @@ Sub AdicionarItem()
         Else
             descProd = strProd
             Dim celP As Range
-            Set celP = PlanProdutos.Range("B:B").Find(What:=descProd, LookIn:=xlValues, LookAt:=xlWhole)
+            Set celP = PlanProdutos.Range("C:C").Find(What:=descProd, LookIn:=xlValues, LookAt:=xlWhole)
             If Not celP Is Nothing Then
-                idProd = celP.Offset(0, -1).Text
+                idProd = PlanProdutos.Cells(celP.Row, "A").Text
             Else
                 idProd = "0"
             End If
@@ -613,6 +618,8 @@ Sub FinalizarVenda()
         Call IniciarNovaVenda
     End With
 End Sub
+
+
 
 
 

@@ -19,6 +19,11 @@ Public bModoTroca As Boolean
 
 Private Sub UserForm_Initialize()
     Me.Caption = "Identificação do Operador - PDV"
+    On Error Resume Next
+    LblInfo.Caption = "Acesso Individual Protegido por PIN:" & vbCrLf & _
+                      "• Recepção: Vitória ou Geovana" & vbCrLf & _
+                      "• Administração: Administrador (PIN Restrito)"
+    On Error GoTo 0
     
     CboOperador.Clear
     Dim wsU As Worksheet
