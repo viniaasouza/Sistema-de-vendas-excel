@@ -249,9 +249,9 @@ Sub ProdutoSelecionado()
         
         If Not linProd Is Nothing Then
             Dim vPrecoVenda As Double
-            vPrecoVenda = Val(Replace(PlanProdutos.Cells(linProd.Row, "F").Value, ",", "."))
+            vPrecoVenda = ConverterParaDouble(PlanProdutos.Cells(linProd.Row, "F").Value)
             .TxtPrecoUnit.Text = Format(vPrecoVenda, "#,##0.00")
-            If Val(.TxtQtd.Text) <= 0 Then .TxtQtd.Text = "1"
+            If ConverterParaDouble(.TxtQtd.Text) <= 0 Then .TxtQtd.Text = "1"
             Call AtualizarSubtotalItem
         End If
     End With
@@ -260,19 +260,8 @@ End Sub
 Sub AtualizarSubtotalItem()
     With FormVendas
         Dim preco As Double, qtd As Double, subtotal As Double
-        preco = 0
-        qtd = 0
-        
-        Dim pStr As String
-        pStr = Replace(.TxtPrecoUnit.Text, "R$", "")
-        pStr = Replace(pStr, ".", Application.International(xlDecimalSeparator))
-        pStr = Replace(pStr, ",", Application.International(xlDecimalSeparator))
-        If IsNumeric(pStr) Then preco = CDbl(pStr)
-        
-        Dim qStr As String
-        qStr = Replace(.TxtQtd.Text, ",", Application.International(xlDecimalSeparator))
-        qStr = Replace(qStr, ".", Application.International(xlDecimalSeparator))
-        If IsNumeric(qStr) Then qtd = CDbl(qStr)
+        preco = ConverterParaDouble(.TxtPrecoUnit.Text)
+        qtd = ConverterParaDouble(.TxtQtd.Text)
         
         subtotal = preco * qtd
         .TxtSubtotalItem.Text = Format(subtotal, "R$ #,##0.00")
@@ -282,33 +271,23 @@ End Sub
 Sub AdicionarItem()
     With FormVendas
         If Trim(.CboProduto.Text) = "" Then
-            MsgBox "Selecione ou digite um produto!", vbExclamation, "Item Inválido"
+            MsgBox "Selecione ou digite um produto!", vbExclamation, "Item Invalido"
             .CboProduto.SetFocus
             Exit Sub
         End If
         
         Dim preco As Double, qtd As Double
-        preco = 0
-        qtd = 0
-        
-        Dim pStr As String, qStr As String
-        pStr = Replace(.TxtPrecoUnit.Text, "R$", "")
-        pStr = Replace(pStr, ".", Application.International(xlDecimalSeparator))
-        pStr = Replace(pStr, ",", Application.International(xlDecimalSeparator))
-        If IsNumeric(pStr) Then preco = CDbl(pStr)
-        
-        qStr = Replace(.TxtQtd.Text, ",", Application.International(xlDecimalSeparator))
-        qStr = Replace(qStr, ".", Application.International(xlDecimalSeparator))
-        If IsNumeric(qStr) Then qtd = CDbl(qStr)
+        preco = ConverterParaDouble(.TxtPrecoUnit.Text)
+        qtd = ConverterParaDouble(.TxtQtd.Text)
         
         If preco <= 0 Then
-            MsgBox "Preço unitário inválido!", vbExclamation, "Preço Inválido"
+            MsgBox "Preco unitario invalido!", vbExclamation, "Preco Invalido"
             .TxtPrecoUnit.SetFocus
             Exit Sub
         End If
         
         If qtd <= 0 Then
-            MsgBox "Informe uma quantidade maior que zero!", vbExclamation, "Quantidade Inválida"
+            MsgBox "Informe uma quantidade maior que zero!", vbExclamation, "Quantidade Invalida"
             .TxtQtd.SetFocus
             Exit Sub
         End If
@@ -415,21 +394,13 @@ Sub RecalcularTotaisVenda()
         totBruto = 0
         
         For i = 0 To .LstItens.ListCount - 1
-            Dim subStr As String, subVal As Double
-            subStr = Replace(.LstItens.List(i, 5), "R$", "")
-            subStr = Replace(subStr, ".", Application.International(xlDecimalSeparator))
-            subStr = Replace(subStr, ",", Application.International(xlDecimalSeparator))
-            If IsNumeric(subStr) Then subVal = CDbl(subStr) Else subVal = 0
-            totBruto = totBruto + subVal
+            totBruto = totBruto + ConverterParaDouble(.LstItens.List(i, 5))
         Next i
         
         .TxtTotalBruto.Text = Format(totBruto, "R$ #,##0.00")
         
-        Dim descVal As Double, descStr As String
-        descStr = Replace(.TxtDesconto.Text, "R$", "")
-        descStr = Replace(descStr, ".", Application.International(xlDecimalSeparator))
-        descStr = Replace(descStr, ",", Application.International(xlDecimalSeparator))
-        If IsNumeric(descStr) Then descVal = CDbl(descStr) Else descVal = 0
+        Dim descVal As Double
+        descVal = ConverterParaDouble(.TxtDesconto.Text)
         
         If descVal > totBruto Then descVal = totBruto
         
@@ -437,7 +408,7 @@ Sub RecalcularTotaisVenda()
         totLiquido = totBruto - descVal
         .TxtTotalLiquido.Text = Format(totLiquido, "R$ #,##0.00")
         
-        ' Cálculo de Parcelamento e Previsão Líquida com Taxa de Cartão
+        ' Calculo de Parcelamento e Previsao Liquida com Taxa de Cartao
         Dim numParc As Long
         numParc = 1
         If .CboParcelas.Enabled And .CboParcelas.ListIndex >= 0 Then
@@ -453,11 +424,8 @@ Sub RecalcularTotaisVenda()
         valParcela = totLiquido / numParc
         .TxtValorParcela.Text = Format(valParcela, "R$ #,##0.00") & " (" & numParc & "x)"
         
-        Dim taxaPct As Double, taxaStr As String
-        taxaStr = Replace(.TxtTaxaCartao.Text, "%", "")
-        taxaStr = Replace(taxaStr, ".", Application.International(xlDecimalSeparator))
-        taxaStr = Replace(taxaStr, ",", Application.International(xlDecimalSeparator))
-        If IsNumeric(taxaStr) Then taxaPct = CDbl(taxaStr) / 100 Else taxaPct = 0
+        Dim taxaPct As Double
+        taxaPct = ConverterParaDouble(.TxtTaxaCartao.Text) / 100
         
         Dim valorTaxaRS As Double, liqReceber As Double
         valorTaxaRS = totLiquido * taxaPct
@@ -513,9 +481,9 @@ Sub FinalizarVenda()
         idVenda = Val(.TxtIDVenda.Text)
         
         Dim totBruto As Double, totDesc As Double, totLiq As Double
-        totBruto = CDbl(Replace(.TxtTotalBruto.Text, "R$", ""))
-        totDesc = IIf(IsNumeric(.TxtDesconto.Text), CDbl(.TxtDesconto.Text), 0)
-        totLiq = CDbl(Replace(.TxtTotalLiquido.Text, "R$", ""))
+        totBruto = ConverterParaDouble(.TxtTotalBruto.Text)
+        totDesc = ConverterParaDouble(.TxtDesconto.Text)
+        totLiq = ConverterParaDouble(.TxtTotalLiquido.Text)
         
         Dim strParcSalvar As String
         strParcSalvar = Trim(.CboParcelas.Text)
@@ -524,51 +492,51 @@ Sub FinalizarVenda()
         End If
         If strParcSalvar = "" Then strParcSalvar = "1x"
         
-        Dim taxaPctSalvar As Double, taxaStr As String
-        taxaStr = Trim(Replace(.TxtTaxaCartao.Text, "%", ""))
-        taxaStr = Replace(taxaStr, ".", Application.International(xlDecimalSeparator))
-        taxaStr = Replace(taxaStr, ",", Application.International(xlDecimalSeparator))
-        If IsNumeric(taxaStr) Then
-            taxaPctSalvar = CDbl(taxaStr) / 100
-        Else
-            taxaPctSalvar = 0
-        End If
+        Dim taxaPctSalvar As Double
+        taxaPctSalvar = ConverterParaDouble(.TxtTaxaCartao.Text) / 100
         
         Dim liqReceberSalvar As Double
-        liqReceberSalvar = CDbl(Replace(.TxtValorReceber.Text, "R$", ""))
+        liqReceberSalvar = ConverterParaDouble(.TxtValorReceber.Text)
         
         Dim opSalvar As String
         opSalvar = Trim(ModSeguranca.vNomeOperador)
-        If opSalvar = "" Then opSalvar = "Recepção Geral"
+        If opSalvar = "" Then opSalvar = "Recepcao Geral"
         
         Dim msgConf As String
-        If .CboFormaPagto.Text = "Cartão de Crédito" And InStr(.CboParcelas.Text, "1x") = 0 Then
-            msgConf = "Confirmar finalização da Venda Nº " & .TxtIDVenda.Text & "?" & vbCrLf & vbCrLf & _
-                      "• Operador: " & opSalvar & vbCrLf & _
-                      "• Total Cliente: " & .TxtTotalLiquido.Text & " em " & .TxtValorParcela.Text & vbCrLf & _
-                      "• Previsão Líquida a Receber: " & .TxtValorReceber.Text & " (" & .TxtTaxaRS.Text & ")"
+        If .CboFormaPagto.Text = "Cartao de Credito" And InStr(.CboParcelas.Text, "1x") = 0 Then
+            msgConf = "Confirmar finalizacao da Venda N " & .TxtIDVenda.Text & "?" & vbCrLf & vbCrLf & _
+                      "  Operador: " & opSalvar & vbCrLf & _
+                      "  Total Cliente: " & .TxtTotalLiquido.Text & " em " & .TxtValorParcela.Text & vbCrLf & _
+                      "  Previsao Liquida a Receber: " & .TxtValorReceber.Text & " (" & .TxtTaxaRS.Text & ")"
         Else
-            msgConf = "Confirmar finalização da Venda Nº " & .TxtIDVenda.Text & " no valor de " & .TxtTotalLiquido.Text & "?" & vbCrLf & _
-                      "• Operador: " & opSalvar & vbCrLf & _
-                      "• Forma de Pagamento: " & .CboFormaPagto.Text & vbCrLf & _
-                      "• Previsão Líquida a Receber: " & .TxtValorReceber.Text
+            msgConf = "Confirmar finalizacao da Venda N " & .TxtIDVenda.Text & " no valor de " & .TxtTotalLiquido.Text & "?" & vbCrLf & _
+                      "  Operador: " & opSalvar & vbCrLf & _
+                      "  Forma de Pagamento: " & .CboFormaPagto.Text & vbCrLf & _
+                      "  Previsao Liquida a Receber: " & .TxtValorReceber.Text
         End If
         
         If MsgBox(msgConf, vbQuestion + vbYesNo, "Confirmar Venda") = vbNo Then Exit Sub
         
-        ' Gravar Cabeçalho da Venda na aba VENDAS
+        ' Gravar Cabecalho da Venda na aba VENDAS
         Dim linV As Long
         linV = PlanVendas.Cells(PlanVendas.Rows.Count, "A").End(xlUp).Row + 1
         
+        Dim dtVenda As Date
+        If IsDate(.TxtData.Text) Then
+            dtVenda = CDate(.TxtData.Text)
+        Else
+            dtVenda = Date
+        End If
+        
         PlanVendas.Cells(linV, "A").Value = idVenda
-        PlanVendas.Cells(linV, "B").Value = CDate(.TxtData.Text)
+        PlanVendas.Cells(linV, "B").Value = dtVenda
         PlanVendas.Cells(linV, "C").Value = idCli
         PlanVendas.Cells(linV, "D").Value = nomeCli
         PlanVendas.Cells(linV, "E").Value = totBruto
         PlanVendas.Cells(linV, "F").Value = totDesc
         PlanVendas.Cells(linV, "G").Value = totLiq
         PlanVendas.Cells(linV, "H").Value = .CboFormaPagto.Text
-        PlanVendas.Cells(linV, "I").Value = "Concluída"
+        PlanVendas.Cells(linV, "I").Value = "Concluida"
         PlanVendas.Cells(linV, "J").Value = strParcSalvar
         PlanVendas.Cells(linV, "K").Value = taxaPctSalvar
         PlanVendas.Cells(linV, "L").Value = liqReceberSalvar
@@ -589,9 +557,9 @@ Sub FinalizarVenda()
             Dim idProd As String, descProd As String, prcItem As Double, qtdItem As Double, subItem As Double
             idProd = .LstItens.List(i, 1)
             descProd = .LstItens.List(i, 2)
-            prcItem = CDbl(Replace(.LstItens.List(i, 3), "R$", ""))
-            qtdItem = CDbl(.LstItens.List(i, 4))
-            subItem = CDbl(Replace(.LstItens.List(i, 5), "R$", ""))
+            prcItem = ConverterParaDouble(.LstItens.List(i, 3))
+            qtdItem = ConverterParaDouble(.LstItens.List(i, 4))
+            subItem = ConverterParaDouble(.LstItens.List(i, 5))
             
             PlanItensVenda.Cells(linItem, "A").Value = ultIDItem
             PlanItensVenda.Cells(linItem, "B").Value = idVenda
@@ -606,9 +574,9 @@ Sub FinalizarVenda()
             Call BaixarEstoqueItemVenda(descProd, CLng(qtdItem))
         Next i
         
-        ' Pergunta de Emissão de Comprovante em PDF
+        ' Pergunta de Emissao de Comprovante em PDF
         Dim pergCupom As VbMsgBoxResult
-        pergCupom = MsgBox("Venda Nº " & Format(idVenda, "0000") & " finalizada com sucesso por " & opSalvar & "!" & vbCrLf & vbCrLf & _
+        pergCupom = MsgBox("Venda N " & Format(idVenda, "0000") & " finalizada com sucesso por " & opSalvar & "!" & vbCrLf & vbCrLf & _
                            "Deseja emitir o Comprovante de Venda em PDF agora?", vbQuestion + vbYesNo, "Comprovante de Venda")
                            
         If pergCupom = vbYes Then
@@ -618,9 +586,5 @@ Sub FinalizarVenda()
         Call IniciarNovaVenda
     End With
 End Sub
-
-
-
-
 
 

@@ -21,19 +21,7 @@ Private Function PlanConfig() As Worksheet
 End Function
 
 Private Function LimparMoeda(ByVal valStr As String) As Double
-    Dim s As String
-    s = Trim(Replace(valStr, "R$", ""))
-    s = Replace(s, " ", "")
-    If Application.International(xlDecimalSeparator) = "," Then
-        s = Replace(s, ".", "")
-    Else
-        s = Replace(s, ",", "")
-    End If
-    If IsNumeric(s) Then
-        LimparMoeda = CDbl(s)
-    Else
-        LimparMoeda = 0
-    End If
+    LimparMoeda = ConverterParaDouble(valStr)
 End Function
 
 Public Function ObterPastaLocalRelatorios() As String

@@ -1,6 +1,111 @@
 Attribute VB_Name = "ModFuncoes"
 Option Explicit
 
+Public Function TestarPDVFluxoCompleto() As String
+    On Error GoTo TrataErro
+    
+    ' 1. Configurar sessao da Vitoria Karollyne (RECEPCAO)
+    ModSeguranca.vUsuarioAtivo = "vitoria"
+    ModSeguranca.vNomeOperador = "Vitória Karollyne Bezerra da Fonseca"
+    ModSeguranca.vPerfilAtivo = "RECEPCAO"
+    
+    ' 2. Carregar FormVendas e Iniciar PDV
+    Load FormVendas
+    Call ModVendas.IniciarNovaVenda
+    
+    ' 3. Preencher dados da venda
+    FormVendas.CboCliente.Text = "Carlos Alberto da Silva (1)"
+    FormVendas.CboProduto.ListIndex = 0
+    Call ModVendas.ProdutoSelecionado
+    Call ModVendas.AdicionarItem
+    
+    FormVendas.CboFormaPagto.Text = "Cartão de Crédito"
+    Call ModVendas.FormaPagtoAlterada
+    
+    ' DESCONTO VAZIO ("") intencional
+    FormVendas.TxtDesconto.Text = ""
+    Call ModVendas.RecalcularTotaisVenda
+    
+    ' 4. Extrair valores com ConverterParaDouble
+    Dim bVal As Double, dVal As Double, lVal As Double, tVal As Double, rVal As Double
+    bVal = ConverterParaDouble(FormVendas.TxtTotalBruto.Text)
+    dVal = ConverterParaDouble(FormVendas.TxtDesconto.Text)
+    lVal = ConverterParaDouble(FormVendas.TxtTotalLiquido.Text)
+    tVal = ConverterParaDouble(FormVendas.TxtTaxaCartao.Text) / 100
+    rVal = ConverterParaDouble(FormVendas.TxtValorReceber.Text)
+    
+    If bVal <= 0 Or lVal <= 0 Then
+        Unload FormVendas
+        TestarPDVFluxoCompleto = "ERRO: Valores invalidos Bruto=" & bVal & " Liq=" & lVal
+        Exit Function
+    End If
+    
+    ' 5. Gravar na aba VENDAS
+    Dim wsV As Worksheet, wsI As Worksheet
+    Set wsV = ThisWorkbook.Sheets("VENDAS")
+    Set wsI = ThisWorkbook.Sheets("ITENS_VENDA")
+    
+    Dim idVenda As Long, linV As Long
+    idVenda = Val(FormVendas.TxtIDVenda.Text)
+    linV = wsV.Cells(wsV.Rows.Count, "A").End(xlUp).Row + 1
+    
+    wsV.Cells(linV, "A").Value = idVenda
+    wsV.Cells(linV, "B").Value = Date
+    wsV.Cells(linV, "C").Value = "1"
+    wsV.Cells(linV, "D").Value = "Carlos Alberto da Silva"
+    wsV.Cells(linV, "E").Value = bVal
+    wsV.Cells(linV, "F").Value = dVal
+    wsV.Cells(linV, "G").Value = lVal
+    wsV.Cells(linV, "H").Value = FormVendas.CboFormaPagto.Text
+    wsV.Cells(linV, "I").Value = "Concluída"
+    wsV.Cells(linV, "J").Value = "1x"
+    wsV.Cells(linV, "K").Value = tVal
+    wsV.Cells(linV, "L").Value = rVal
+    wsV.Cells(linV, "M").Value = ModSeguranca.vNomeOperador
+    
+    ' Gravar na aba ITENS_VENDA
+    Dim linI As Long
+    linI = wsI.Cells(wsI.Rows.Count, "A").End(xlUp).Row + 1
+    wsI.Cells(linI, "A").Value = linI - 1
+    wsI.Cells(linI, "B").Value = idVenda
+    wsI.Cells(linI, "C").Value = FormVendas.LstItens.List(0, 1)
+    wsI.Cells(linI, "D").Value = FormVendas.LstItens.List(0, 2)
+    wsI.Cells(linI, "E").Value = ConverterParaDouble(FormVendas.LstItens.List(0, 3))
+    wsI.Cells(linI, "F").Value = ConverterParaDouble(FormVendas.LstItens.List(0, 4))
+    wsI.Cells(linI, "G").Value = ConverterParaDouble(FormVendas.LstItens.List(0, 5))
+    
+    ' Baixar estoque de teste
+    Call ModVendas.BaixarEstoqueItemVenda(CStr(FormVendas.LstItens.List(0, 2)), 1)
+    
+    ' Ler confirmacao
+    Dim cID As Long, cCli As String, cBruto As Double, cDesc As Double, cLiq As Double, cOp As String, cStatus As String
+    cID = wsV.Cells(linV, "A").Value
+    cCli = wsV.Cells(linV, "D").Value
+    cBruto = wsV.Cells(linV, "E").Value
+    cDesc = wsV.Cells(linV, "F").Value
+    cLiq = wsV.Cells(linV, "G").Value
+    cStatus = wsV.Cells(linV, "I").Value
+    cOp = wsV.Cells(linV, "M").Value
+    
+    ' Reverter o estoque baixado no teste e deletar linhas
+    Call ModVendas.BaixarEstoqueItemVenda(CStr(FormVendas.LstItens.List(0, 2)), -1)
+    wsV.Rows(linV).Delete
+    wsI.Rows(linI).Delete
+    
+    Unload FormVendas
+    
+    TestarPDVFluxoCompleto = "OK: ID=" & cID & " | Cliente=" & cCli & " | Bruto=" & cBruto & _
+                             " | Desconto=" & cDesc & " | Liq=" & cLiq & " | Op=" & cOp & _
+                             " | Status=" & cStatus
+    Exit Function
+
+TrataErro:
+    On Error Resume Next
+    Unload FormVendas
+    TestarPDVFluxoCompleto = "ERRO (" & Err.Number & "): " & Err.Description
+End Function
+
+
 Public Function InspecionarRuntimeFormProdutos() As String
     Load FormProdutos
     Dim c As Object
@@ -121,24 +226,3 @@ Public Function AcSQL(Valor As String) As String
             Case 67: t = t & "[CÇ]"
             Case 69: t = t & "[EÉÈÊË]"
             Case 73: t = t & "[IÍÌÎÏ]"
-            Case 79: t = t & "[OÓÒÔÕÖ]"
-            Case 85: t = t & "[UÚÙÛÜ]"
-            Case 97: t = t & "[aáàâãä]"
-            Case 99: t = t & "[cç]"
-            Case 101: t = t & "[eéèêë]"
-            Case 105: t = t & "[iíìîï]"
-            Case 111: t = t & "[oóòôõö]"
-            Case 117: t = t & "[uúùûü]"
-            Case Else
-                If v > 31 And v < 127 Then
-                    t = t & VBA.Chr(v)
-                Else
-                    t = t & "_"
-                End If
-        End Select
-    Next n
-    AcSQL = t
-End Function
-
-
-
