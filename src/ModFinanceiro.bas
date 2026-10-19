@@ -1,6 +1,7 @@
 Attribute VB_Name = "ModFinanceiro"
 Option Explicit
 Option Compare Text
+Public bAtualizandoFinanceiro As Boolean
 
 ' =============================================================================
 ' MÓDULO FINANCEIRO: GESTÃO DE DESPESAS, DRE E FLUXO DE CAIXA (FASES 2 & 3)
@@ -108,7 +109,10 @@ End Function
 ' MOTOR DE RECÁLCULO AUTOMÁTICO DA DRE E FLUXO DE CAIXA
 ' -----------------------------------------------------------------------------
 Public Sub AtualizarDemonstrativos()
+    If bAtualizandoFinanceiro Then Exit Sub
     On Error GoTo FimAtualizacao
+    bAtualizandoFinanceiro = True
+    Application.EnableEvents = False
     Application.ScreenUpdating = False
     
     Dim wsD As Worksheet, wsDRE As Worksheet, wsFC As Worksheet
@@ -263,7 +267,9 @@ Public Sub AtualizarDemonstrativos()
     Application.Calculate
     
 FimAtualizacao:
+    Application.EnableEvents = True
     Application.ScreenUpdating = True
+    bAtualizandoFinanceiro = False
 End Sub
 
 ' -----------------------------------------------------------------------------
