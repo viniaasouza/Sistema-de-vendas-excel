@@ -1,6 +1,19 @@
 Attribute VB_Name = "ModFuncoes"
 Option Explicit
 
+Public Sub AbrirDespesas()
+    Call ModFinanceiro.AbrirPainelDespesas
+End Sub
+
+Public Sub AbrirDRE()
+    Call ModFinanceiro.IrParaDRE
+End Sub
+
+Public Sub AbrirFluxoCaixa()
+    Call ModFinanceiro.IrParaFluxoCaixa
+End Sub
+
+
 Public Function InspecionarRuntimeFormProdutos() As String
     Load FormProdutos
     Dim c As Object

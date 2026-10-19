@@ -21,6 +21,7 @@ Private Sub Workbook_Open()
     ThisWorkbook.Sheets("INÍCIO").Activate
     ActiveWindow.DisplayGridlines = False
     Call ModDashboard.AtualizarDashboard
+    Call ModFinanceiro.AtualizarDemonstrativos
     
     ' Exibe tela de Login imediatamente
     FormLogin.bModoTroca = True
@@ -53,6 +54,11 @@ End Sub
 Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal Target As Range)
     On Error Resume Next
     Call ModProdutosServicos.ProcessarEdicaoPlanilha(Sh, Target)
+    If Sh.Name = "APURACAO_RESULTADOS" Or Sh.Name = "FLUXO_CAIXA" Then
+        If Not Intersect(Target, Sh.Range("E5")) Is Nothing Then
+            Call ModFinanceiro.AtualizarDemonstrativos
+        End If
+    End If
     On Error GoTo 0
 End Sub
 

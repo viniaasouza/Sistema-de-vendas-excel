@@ -583,8 +583,12 @@ Sub FinalizarVenda()
             Call ModRelatorios.GerarComprovanteVendaPorID(idVenda)
         End If
         
+        On Error Resume Next
+        Call ModFinanceiro.AtualizarDemonstrativos
+        On Error GoTo 0
         Call IniciarNovaVenda
     End With
 End Sub
+
 
 

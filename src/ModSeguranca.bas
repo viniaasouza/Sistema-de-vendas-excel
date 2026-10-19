@@ -237,7 +237,7 @@ Public Sub AplicarVisibilidadeAbasPorPerfil()
     
     ' Planilhas restritas exclusivamente para o Administrador
     Dim abasRestritas As Variant
-    abasRestritas = Array("VENDAS", "CONFIG", "CLIENTES", "INVENTARIO", "PRODUTOS_SERVICOS", "ITENS_VENDA", "R_Vendas")
+    abasRestritas = Array("VENDAS", "CONFIG", "CLIENTES", "INVENTARIO", "PRODUTOS_SERVICOS", "ITENS_VENDA", "R_Vendas", "DESPESAS", "APURACAO_RESULTADOS", "FLUXO_CAIXA")
     
     Dim i As Long, nomeAba As String, ws As Worksheet
     For i = LBound(abasRestritas) To UBound(abasRestritas)
@@ -277,5 +277,6 @@ Public Function SolicitarPINAdmin(ByVal operacaoDescricao As String) As String
     End If
     Unload FormPIN
 End Function
+
 
 
